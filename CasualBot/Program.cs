@@ -69,21 +69,17 @@ namespace CasualBot
                                             var messagetarget = message.Channel.GetMessageAsync(messageID).Result;
                                             if (messagetarget != null)
                                             {
-                                                IEmote iEmote = null;
+                                                IEmote parsedEmote = null;
                                                 if (Emote.TryParse(reactionEmote, out var emote))
-                                                    iEmote = emote;
+                                                    parsedEmote = emote;
                                                 else
-                                                    iEmote = new Emoji(reactionEmote);
+                                                    parsedEmote = new Emoji(reactionEmote);
 
-                                                messagetarget.AddReactionAsync(iEmote);
+                                                messagetarget.AddReactionAsync(parsedEmote);
 
                                                 message.DeleteAsync();
                                             }
-
                                         }
-
-
-
                                     }
                                 }
                             }
