@@ -40,6 +40,7 @@ namespace CasualBot
                 };
 
 
+                Console.WriteLine("CONSITA SUCKS HIHI");
 
 
 
