@@ -1,8 +1,11 @@
 ﻿using CasualBot.Modules;
+using Discord;
 using Discord.WebSocket;
 using PawDiscordBot;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -31,18 +34,68 @@ namespace CasualBot
 
                 CasualBotClient client = new CasualBotClient(botKey);
                 client.Logger = new CasualBotLogger(botLogPath, true);
-                client.RegisterModule(typeof(NoPrefixModule));
+                // client.RegisterModule(typeof(NoPrefixModule));
                 client.Start(dsCfg);
 
-                client.OnMessage += (msg) =>
+                client.OnMessage = (message) =>
                 {
+                    try
+                    {
+                        if (message.Content == "bangh")
+                        {
+                            message.Channel.SendMessageAsync("bongh", true);
+                        }
+                        else
+                        {
+                            string[] strSplit = message.Content.Split(' ');
+                            if (strSplit.Length <= 0 || strSplit.Length != 3 || strSplit[0] != "addReaction")
+                            {
+                                return;
+                            }
+                            if (message.Author is SocketGuildUser)
+                            {
+                                SocketGuildUser socketUser = (SocketGuildUser)message.Author;
+                                foreach (var role in socketUser.Roles)
+                                {
+                                    if (role.Name.Equals("Mod"))
+                                    {
+                                        var messagetxt = strSplit[1];
+                                        var reactionEmote = strSplit[2];
+                                        ulong messageID = 0;
+
+
+                                        if (ulong.TryParse(messagetxt, out messageID))
+                                        {
+                                            var messagetarget = message.Channel.GetMessageAsync(messageID).Result;
+                                            if (messagetarget != null)
+                                            {
+                                                IEmote iEmote = null;
+                                                if (Emote.TryParse(reactionEmote, out var emote))
+                                                    iEmote = emote;
+                                                else
+                                                    iEmote = new Emoji(reactionEmote);
+
+                                                messagetarget.AddReactionAsync(iEmote);
+
+                                                message.DeleteAsync();
+                                            }
+
+                                        }
+
+
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (Debugger.IsAttached)
+                            Debugger.Break();
+                    }
 
                 };
-
-
-                Console.WriteLine("CONSITA SUCKS HIHI");
-
-
 
 
 

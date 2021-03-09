@@ -134,11 +134,21 @@ namespace PawDiscordBot
 
                     // Execute the command with the command context we just
                     // created, along with the service provider for precondition checks.
-                    IResult res = CommandService.ExecuteAsync(context, argPos, null).Result;
-
-                    if (!res.IsSuccess && OnMessage != null)
+                    if (CommandService != null)
                     {
-                        OnMessage.Invoke(message);
+                        IResult res = CommandService.ExecuteAsync(context, argPos, null).Result;
+
+                        if (!res.IsSuccess && OnMessage != null)
+                        {
+                            OnMessage.Invoke(message);
+                        }
+                    }
+                    else
+                    {
+                        if (OnMessage != null)
+                        {
+                            OnMessage.Invoke(message);
+                        }
                     }
                 }
                 else
