@@ -32,6 +32,10 @@ namespace CasualBot
             Commands.AddCommand(new AddReactionToMessageCommand());
         }
 
+        public override void ConnectionStarting()
+        {
+        }
+
         public override void ConnectionStarted()
         {
             Client.UserUpdated += Client_UserUpdated;
@@ -47,10 +51,8 @@ namespace CasualBot
                     if (Debugger.IsAttached)
                         Debugger.Break();
                 }
-
             };
         }
-
 
         private Task Client_UserUpdated(SocketUser arg1, SocketUser arg2)
         {

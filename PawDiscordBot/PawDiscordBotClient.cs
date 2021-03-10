@@ -53,6 +53,7 @@ namespace PawDiscordBot
             try { if (Client != null) Client.Dispose(); } catch { }
         }
 
+        public abstract void ConnectionStarting();
         public abstract void ConnectionStarted();
 
         public async void Start(DiscordSocketConfig socketConfig)
@@ -68,7 +69,9 @@ namespace PawDiscordBot
             await Client.LoginAsync(TokenType.Bot, _key);
 
             Log("Starting...");
+            ConnectionStarting();
             await Client.StartAsync();
+            ConnectionStarted();
 
             Client.MessageReceived += Discord_MessageReceived;
             Client.MessageUpdated += Discord_MessageUpdated;
