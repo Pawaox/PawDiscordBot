@@ -11,25 +11,25 @@ namespace PawDiscordBot
     {
         private PawDiscordBotClient _client;
 
-        private Dictionary<PremadeFeature, ActiveFeature> _availableFeatures;
+        private Dictionary<PremadeFeature, ActiveFeature> _activeFeatures;
 
         private Dictionary<string, Action<SocketUserMessage>> _dicCustomCommands;
 
         public CommandStorage(PawDiscordBotClient client)
         {
             _client = client;
-            _availableFeatures = new Dictionary<PremadeFeature, ActiveFeature>();
+            _activeFeatures = new Dictionary<PremadeFeature, ActiveFeature>();
             _dicCustomCommands = new Dictionary<string, Action<SocketUserMessage>>();
 
-            _availableFeatures.Add(PremadeFeature.NONE, new ActiveFeature(PremadeFeature.NONE, "", (m) => { }));
-            _availableFeatures.Add(PremadeFeature.PAUSE, new ActiveFeature(PremadeFeature.PAUSE, "", PremadePause));
-            _availableFeatures.Add(PremadeFeature.UNPAUSE, new ActiveFeature(PremadeFeature.UNPAUSE, "", PremadePause));
+            _activeFeatures.Add(PremadeFeature.NONE, new ActiveFeature(PremadeFeature.NONE, "", (m) => { }));
+            _activeFeatures.Add(PremadeFeature.PAUSE, new ActiveFeature(PremadeFeature.PAUSE, "", PremadePause));
+            _activeFeatures.Add(PremadeFeature.UNPAUSE, new ActiveFeature(PremadeFeature.UNPAUSE, "", PremadeUnpause));
         }
 
         public void RemovePremadeCommand(PremadeFeature cmd)
         {
-            if (_availableFeatures.ContainsKey(cmd))
-                _availableFeatures[cmd].Trigger = "";
+            if (_activeFeatures.ContainsKey(cmd))
+                _activeFeatures[cmd].Trigger = "";
         }
 
         public void AddPremadeCommand(PremadeFeature cmd, string trigger)
@@ -37,8 +37,8 @@ namespace PawDiscordBot
             if (string.IsNullOrEmpty(trigger))
                 return;
 
-            if (_availableFeatures.ContainsKey(cmd))
-                _availableFeatures[cmd].Trigger = trigger;
+            if (_activeFeatures.ContainsKey(cmd))
+                _activeFeatures[cmd].Trigger = trigger;
         }
 
         public bool Contains(string key)
@@ -49,7 +49,7 @@ namespace PawDiscordBot
                 if (!result && _dicCustomCommands != null)
                     result = _dicCustomCommands.ContainsKey(key);
 
-                if (!result && _availableFeatures != null)
+                if (!result && _activeFeatures != null)
                 {
                     ActiveFeature af = GetActiveFeatureFromKey(key);
                     result = af != null;
@@ -88,7 +88,7 @@ namespace PawDiscordBot
         public PremadeFeature GetFeatureType(string key)
         {
             PremadeFeature found = PremadeFeature.NONE;
-            ActiveFeature af = _availableFeatures[found];
+            ActiveFeature af = GetActiveFeatureFromKey(key);
 
             if (af != null)
                 found = af.Feature;
@@ -103,9 +103,9 @@ namespace PawDiscordBot
 
         private void PremadePause(SocketUserMessage msg)
         {
-            if (_availableFeatures.ContainsKey(PremadeFeature.PAUSE))
+            if (_activeFeatures.ContainsKey(PremadeFeature.PAUSE))
             {
-                ActiveFeature af = _availableFeatures[PremadeFeature.PAUSE];
+                ActiveFeature af = _activeFeatures[PremadeFeature.PAUSE];
 
                 if (af != null && af.Trigger.Equals(msg.Content))
                 {
@@ -115,9 +115,9 @@ namespace PawDiscordBot
         }
         private void PremadeUnpause(SocketUserMessage msg)
         {
-            if (_availableFeatures.ContainsKey(PremadeFeature.UNPAUSE))
+            if (_activeFeatures.ContainsKey(PremadeFeature.UNPAUSE))
             {
-                ActiveFeature af = _availableFeatures[PremadeFeature.UNPAUSE];
+                ActiveFeature af = _activeFeatures[PremadeFeature.UNPAUSE];
 
                 if (af != null && af.Trigger.Equals(msg.Content))
                 {
@@ -130,11 +130,11 @@ namespace PawDiscordBot
         private ActiveFeature GetActiveFeatureFromKey(string key)
         {
             ActiveFeature result = null;
-            if (_availableFeatures != null)
+            if (_activeFeatures != null)
             {
-                foreach (ActiveFeature af in _availableFeatures.Values)
+                foreach (ActiveFeature af in _activeFeatures.Values)
                 {
-                    if (af.Trigger.Equals(key))
+                    if (!string.IsNullOrEmpty(af?.Trigger) && af.Trigger.Equals(key))
                     {
                         result = af;
                         break;
