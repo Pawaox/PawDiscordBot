@@ -115,7 +115,7 @@ namespace PawDiscordBot
 
                     if (IgnoreReceivedMessages)
                     {
-                        if (Commands.IsFeature(content, CommandStorage.PremadeFeature.UNPAUSE))
+                        if (Commands.GetFeatureType(content) == CommandStorage.PremadeFeature.UNPAUSE)
                             Commands.Invoke(content, message);
 
                         return;

@@ -11,26 +11,25 @@ namespace PawDiscordBot
     {
         private PawDiscordBotClient _client;
 
-        private Dictionary<PremadeFeature, string> _dicMapping;
-        private Dictionary<string, Action<SocketUserMessage>> _dicCommands;
+        private Dictionary<PremadeFeature, ActiveFeature> _availableFeatures;
+
+        private Dictionary<string, Action<SocketUserMessage>> _dicCustomCommands;
 
         public CommandStorage(PawDiscordBotClient client)
         {
             _client = client;
-            _dicMapping = new Dictionary<PremadeFeature, string>();
-            _dicCommands = new Dictionary<string, Action<SocketUserMessage>>();
+            _availableFeatures = new Dictionary<PremadeFeature, ActiveFeature>();
+            _dicCustomCommands = new Dictionary<string, Action<SocketUserMessage>>();
+
+            _availableFeatures.Add(PremadeFeature.NONE, new ActiveFeature(PremadeFeature.NONE, "", (m) => { }));
+            _availableFeatures.Add(PremadeFeature.PAUSE, new ActiveFeature(PremadeFeature.PAUSE, "", PremadePause));
+            _availableFeatures.Add(PremadeFeature.UNPAUSE, new ActiveFeature(PremadeFeature.UNPAUSE, "", PremadePause));
         }
 
         public void RemovePremadeCommand(PremadeFeature cmd)
         {
-            if (_dicMapping.ContainsKey(cmd))
-            {
-                string key = _dicMapping[cmd];
-                _dicMapping.Remove(cmd);
-
-                if (_dicCommands.ContainsKey(key))
-                    _dicCommands.Remove(key);
-            }
+            if (_availableFeatures.ContainsKey(cmd))
+                _availableFeatures[cmd].Trigger = "";
         }
 
         public void AddPremadeCommand(PremadeFeature cmd, string trigger)
@@ -38,63 +37,89 @@ namespace PawDiscordBot
             if (string.IsNullOrEmpty(trigger))
                 return;
 
-            if (!_dicCommands.ContainsKey(trigger))
-                _dicCommands.Add(trigger, PremadeSleepAndWake);
-            else
-                _dicCommands[trigger] = PremadeSleepAndWake;
-
-            if (!_dicMapping.ContainsKey(cmd))
-                _dicMapping.Add(cmd, trigger);
-            else
-                _dicMapping[cmd] = trigger;
+            if (_availableFeatures.ContainsKey(cmd))
+                _availableFeatures[cmd].Trigger = trigger;
         }
+
         public bool Contains(string key)
         {
-            if (_dicCommands == null || string.IsNullOrEmpty(key))
-                return false;
-            return _dicCommands.ContainsKey(key);
-        }
-
-        public void Invoke(string key, SocketUserMessage message)
-        {
-            if (_dicCommands == null || string.IsNullOrEmpty(key))
-                return;
-
-            _dicCommands[key].Invoke(message);
-        }
-
-        public bool IsFeature(string key, PremadeFeature feature)
-        {
             bool result = false;
+            if (!string.IsNullOrEmpty(key))
+            {
+                if (!result && _dicCustomCommands != null)
+                    result = _dicCustomCommands.ContainsKey(key);
 
-            if (_dicMapping.ContainsKey(feature))
-                result = _dicMapping[feature].Equals(key);
+                if (!result && _availableFeatures != null)
+                {
+                    ActiveFeature af = GetActiveFeatureFromKey(key);
+                    result = af != null;
+                }
+            }
 
             return result;
         }
 
-
-
-
-
-
-        private void PremadeSleepAndWake(SocketUserMessage msg)
+        public bool Invoke(string key, SocketUserMessage message)
         {
-            string key = "";
-            if (_dicMapping.ContainsKey(PremadeFeature.PAUSE))
-            {
-                key = _dicMapping[PremadeFeature.PAUSE];
+            bool invoked = false;
 
-                if (!string.IsNullOrEmpty(key) && key.Equals(msg.Content))
+            if (!string.IsNullOrEmpty(key))
+            {
+                if (_dicCustomCommands != null && _dicCustomCommands.ContainsKey(key))
+                {
+                    _dicCustomCommands[key].Invoke(message);
+                    invoked = true;
+                }
+
+                if (!invoked)
+                {
+                    ActiveFeature af = GetActiveFeatureFromKey(key);
+                    if (af?.Implementation != null)
+                    {
+                        af.Implementation.Invoke(message);
+                        invoked = true;
+                    }
+                }
+            }
+
+            return invoked;
+        }
+
+        public PremadeFeature GetFeatureType(string key)
+        {
+            PremadeFeature found = PremadeFeature.NONE;
+            ActiveFeature af = _availableFeatures[found];
+
+            if (af != null)
+                found = af.Feature;
+
+            return found;
+        }
+
+
+
+
+
+
+        private void PremadePause(SocketUserMessage msg)
+        {
+            if (_availableFeatures.ContainsKey(PremadeFeature.PAUSE))
+            {
+                ActiveFeature af = _availableFeatures[PremadeFeature.PAUSE];
+
+                if (af != null && af.Trigger.Equals(msg.Content))
                 {
                     _client.IgnoreReceivedMessages = true;
                 }
             }
-            if (_dicMapping.ContainsKey(PremadeFeature.UNPAUSE))
+        }
+        private void PremadeUnpause(SocketUserMessage msg)
+        {
+            if (_availableFeatures.ContainsKey(PremadeFeature.UNPAUSE))
             {
-                key = _dicMapping[PremadeFeature.UNPAUSE];
+                ActiveFeature af = _availableFeatures[PremadeFeature.UNPAUSE];
 
-                if (!string.IsNullOrEmpty(key) && key.Equals(msg.Content))
+                if (af != null && af.Trigger.Equals(msg.Content))
                 {
                     _client.IgnoreReceivedMessages = false;
                 }
@@ -102,23 +127,41 @@ namespace PawDiscordBot
         }
 
 
+        private ActiveFeature GetActiveFeatureFromKey(string key)
+        {
+            ActiveFeature result = null;
+            if (_availableFeatures != null)
+            {
+                foreach (ActiveFeature af in _availableFeatures.Values)
+                {
+                    if (af.Trigger.Equals(key))
+                    {
+                        result = af;
+                        break;
+                    }
+                }
+            }
+
+            return result;
+        }
+
         private void AddCommand(string cmd, Action<SocketUserMessage> command)
         {
             if (string.IsNullOrEmpty(cmd))
                 return;
 
-            if (!_dicCommands.ContainsKey(cmd))
-                _dicCommands.Add(cmd, command);
+            if (!_dicCustomCommands.ContainsKey(cmd))
+                _dicCustomCommands.Add(cmd, command);
             else
-                _dicCommands[cmd] = command;
+                _dicCustomCommands[cmd] = command;
         }
 
         private Action<SocketUserMessage> GetCommand(string cmd)
         {
             Action<SocketUserMessage> result = null;
 
-            if (_dicCommands.ContainsKey(cmd))
-                result = _dicCommands[cmd];
+            if (_dicCustomCommands.ContainsKey(cmd))
+                result = _dicCustomCommands[cmd];
 
             return result;
         }
@@ -130,8 +173,25 @@ namespace PawDiscordBot
             set { AddCommand(cmd, value); }
         }
 
+        public class ActiveFeature
+        {
+            public PremadeFeature Feature { get; set; }
+            public string Trigger { get; set; }
+            public Action<SocketUserMessage> Implementation { get; set; }
+
+            public ActiveFeature() { }
+            public ActiveFeature(PremadeFeature feat, string trigger, Action<SocketUserMessage> implementation)
+            {
+                this.Feature = feat;
+                this.Trigger = Trigger;
+                this.Implementation = implementation;
+            }
+        }
+
+
         public enum PremadeFeature
         {
+            NONE,
             PAUSE,
             UNPAUSE
         }
