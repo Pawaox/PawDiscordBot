@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using PawDiscordBot.Commands;
+using PawDiscordBot.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,6 +16,8 @@ namespace PawDiscordBot
     {
         private string _key;
         public string LogName { get; set; }
+        public bool CanReplyWithErrors { get; set; }
+        public bool CanReplyWithExceptions { get; set; }
 
         private CommandService CommandService { get; set; }
 
@@ -22,7 +26,8 @@ namespace PawDiscordBot
 
         public CommandStorage Commands { get; private set; }
         public IPawDiscordBotLogger Logger { get; set; }
-        public Action<SocketUserMessage> OnMessage { get; set; }
+
+        public event Action<SocketUserMessage> OnMessage;
 
         public bool IgnoreReceivedMessages { get; set; }
 
@@ -32,10 +37,23 @@ namespace PawDiscordBot
             Commands = new CommandStorage(this);
         }
 
+        public void ReplyToError(SocketUserMessage message, string reply)
+        {
+            if (this.CanReplyWithErrors)
+                message.Channel.SendMessageAsync("ERROR: " + reply);
+        }
+        public void ReplyToException(SocketUserMessage message, string reply)
+        {
+            if (this.CanReplyWithExceptions)
+                message.Channel.SendMessageAsync(reply);
+        }
+
         ~PawDiscordBotClient()
         {
             try { if (Client != null) Client.Dispose(); } catch { }
         }
+
+        public abstract void ConnectionStarted();
 
         public async void Start(DiscordSocketConfig socketConfig)
         {
@@ -111,64 +129,75 @@ namespace PawDiscordBot
                 if (arg is SocketUserMessage)
                 {
                     SocketUserMessage message = (SocketUserMessage)arg;
-                    string content = message.Content;
-
-                    if (IgnoreReceivedMessages)
+                    try
                     {
-                        if (Commands.GetFeatureType(content) == CommandStorage.PremadeFeature.UNPAUSE)
-                            Commands.Invoke(content, message);
+                        string key = message.Content;
 
-                        return;
-                    }
+                        int spacePos = key.IndexOf(' ');
+                        if (spacePos > 0)
+                            key = key.Split(' ')[0];
 
-                    // Create a number to track where the prefix ends and the command begins
-                    int argPos = 0;
-
-                    // Determine if the message is a command based on the prefix and make sure no bots trigger commands
-                    /*
-                    if (!(message.HasCharPrefix('!', ref argPos)))
-                        return;
-                    */
-
-                    if (message.HasMentionPrefix(Client.CurrentUser, ref argPos))
-                        return;
-
-                    if (message.Author.IsBot)
-                        return;
-
-                    var context = new SocketCommandContext(Client, message);
-
-                    bool handled = false;
-
-                    //1. Check if registered in Discord Command Service
-                    if (CommandService != null)
-                    {
-                        IResult res = CommandService.ExecuteAsync(context, argPos, null).Result;
-
-                        handled = res.IsSuccess;
-                    }
-
-                    //2. Check if registered in custom CommandStorage
-                    if (!handled && Commands != null)
-                    {
-                        if (Commands.Contains(message.Content))
+                        if (IgnoreReceivedMessages)
                         {
-                            Commands.Invoke(message.Content, message);
-                            handled = true;
+                            if (Commands.GetPremadeCommandType(key) == PremadeCommand.UNPAUSE)
+                                Commands.Invoke(key, message);
+
+                            return;
+                        }
+
+                        // Create a number to track where the prefix ends and the command begins
+                        int argPos = 0;
+
+                        if (message.HasMentionPrefix(Client.CurrentUser, ref argPos))
+                            return;
+
+                        if (message.Author.IsBot)
+                            return;
+
+                        bool handled = false;
+
+                        //1. Check if registered in Discord Command Service
+                        if (CommandService != null)
+                        {
+                            var context = new SocketCommandContext(Client, message);
+                            IResult res = CommandService.ExecuteAsync(context, argPos, null).Result;
+
+                            handled = res.IsSuccess;
+                        }
+
+                        //2. Check if registered in custom CommandStorage
+                        if (!handled && Commands != null)
+                        {
+                            if (Commands.Contains(key))
+                            {
+                                Commands.Invoke(key, message);
+                                handled = true;
+                            }
+                        }
+
+
+                        //Final, didn't handle it yet? Pass it on.
+                        if (!handled && OnMessage != null)
+                        {
+                            OnMessage.Invoke(message);
                         }
                     }
-
-
-
-                    //Final, didn't handle it yet? Pass it on.
-                    if (!handled && OnMessage != null)
+                    catch (PawDiscordBotUserWarningException warnExc)
                     {
-                        OnMessage.Invoke(message);
+                        try
+                        {
+                            ReplyToError(message, warnExc.Message);
+                        }
+                        catch { }
                     }
-                }
-                else
-                {
-
+                    catch(PawDiscordBotException exc)
+                    {
+                        ReplyToException(message, exc.ToString());
+                    }
+                    catch (Exception exc)
+                    {
+                        ReplyToException(message, exc.ToString());
+                    }
                 }
             });
         }

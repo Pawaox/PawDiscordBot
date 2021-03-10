@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PawDiscordBot
+namespace PawDiscordBot.Exceptions
 {
     public class PawDiscordBotException : Exception
     {
