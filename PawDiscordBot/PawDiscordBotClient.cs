@@ -121,18 +121,6 @@ namespace PawDiscordBot
                         return;
                     }
 
-                    SocketGuildUser u = null;
-                    SocketRole foundRole = null;
-                    foreach (SocketRole role in u.Guild.Roles)
-                    {
-                        if ("Mod".Equals(role.Name))
-                        {
-                            foundRole = role;
-                            break;
-                        }
-                    }
-                    u.AddRoleAsync(foundRole);
-
                     // Create a number to track where the prefix ends and the command begins
                     int argPos = 0;
 
