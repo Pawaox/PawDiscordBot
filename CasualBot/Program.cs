@@ -45,7 +45,7 @@ namespace CasualBot
                         {
                             message.Channel.SendMessageAsync("bongh", true);
                         }
-                        else
+                        else if (message.Content.StartsWith("addReaction"))
                         {
                             string[] strSplit = message.Content.Split(' ');
                             if (strSplit.Length <= 0 || strSplit.Length != 3 || strSplit[0] != "addReaction")
