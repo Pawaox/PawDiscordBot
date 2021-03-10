@@ -13,19 +13,23 @@ namespace PawDiscordBot
     public abstract class PawDiscordBotClient : IDisposable
     {
         private string _key;
-
         public string LogName { get; set; }
 
+        private CommandService CommandService { get; set; }
+
         public DiscordSocketClient Client { get; private set; }
-        public CommandService CommandService { get; private set; }
 
+
+        public CommandStorage Commands { get; private set; }
         public IPawDiscordBotLogger Logger { get; set; }
-
         public Action<SocketUserMessage> OnMessage { get; set; }
+
+        public bool IgnoreReceivedMessages { get; set; }
 
         public PawDiscordBotClient(string key, string LogName = "DiscordBotClient")
         {
             this._key = key;
+            Commands = new CommandStorage(this);
         }
 
         ~PawDiscordBotClient()
@@ -107,6 +111,27 @@ namespace PawDiscordBot
                 if (arg is SocketUserMessage)
                 {
                     SocketUserMessage message = (SocketUserMessage)arg;
+                    string content = message.Content;
+
+                    if (IgnoreReceivedMessages)
+                    {
+                        if (Commands.IsFeature(content, CommandStorage.PremadeFeature.UNPAUSE))
+                            Commands.Invoke(content, message);
+
+                        return;
+                    }
+
+                    SocketGuildUser u = null;
+                    SocketRole foundRole = null;
+                    foreach (SocketRole role in u.Guild.Roles)
+                    {
+                        if ("Mod".Equals(role.Name))
+                        {
+                            foundRole = role;
+                            break;
+                        }
+                    }
+                    u.AddRoleAsync(foundRole);
 
                     // Create a number to track where the prefix ends and the command begins
                     int argPos = 0;
@@ -123,32 +148,34 @@ namespace PawDiscordBot
                     if (message.Author.IsBot)
                         return;
 
-                    if ("!consita".Equals(message.Content))
-                    {
-                        message.Channel.SendMessageAsync("boop");
-                        return;
-                    }
-
-                    // Create a WebSocket-based command context based on the message
                     var context = new SocketCommandContext(Client, message);
 
-                    // Execute the command with the command context we just
-                    // created, along with the service provider for precondition checks.
+                    bool handled = false;
+
+                    //1. Check if registered in Discord Command Service
                     if (CommandService != null)
                     {
                         IResult res = CommandService.ExecuteAsync(context, argPos, null).Result;
 
-                        if (!res.IsSuccess && OnMessage != null)
+                        handled = res.IsSuccess;
+                    }
+
+                    //2. Check if registered in custom CommandStorage
+                    if (!handled && Commands != null)
+                    {
+                        if (Commands.Contains(message.Content))
                         {
-                            OnMessage.Invoke(message);
+                            Commands.Invoke(message.Content, message);
+                            handled = true;
                         }
                     }
-                    else
+
+
+
+                    //Final, didn't handle it yet? Pass it on.
+                    if (!handled && OnMessage != null)
                     {
-                        if (OnMessage != null)
-                        {
-                            OnMessage.Invoke(message);
-                        }
+                        OnMessage.Invoke(message);
                     }
                 }
                 else

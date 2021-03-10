@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static PawDiscordBot.CommandStorage;
 
 namespace CasualBot
 {
@@ -34,6 +35,9 @@ namespace CasualBot
 
                 CasualBotClient client = new CasualBotClient(botKey);
                 client.Logger = new CasualBotLogger(botLogPath, true);
+                client.Commands.AddPremadeCommand(PremadeFeature.PAUSE, "¤pause");
+                client.Commands.AddPremadeCommand(PremadeFeature.UNPAUSE, "¤unpause");
+
                 // client.RegisterModule(typeof(NoPrefixModule));
                 client.Start(dsCfg);
 

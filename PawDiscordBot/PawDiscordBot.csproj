@@ -157,6 +157,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommandStorage.cs" />
     <Compile Include="IPawDiscordBotLogger.cs" />
     <Compile Include="PawDiscordBotClient.cs" />
     <Compile Include="PawDiscordBotException.cs" />
