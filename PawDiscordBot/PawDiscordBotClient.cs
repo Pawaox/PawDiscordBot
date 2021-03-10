@@ -93,27 +93,11 @@ namespace PawDiscordBot
         }
 
 
-        public void AddPawCommand(string trigger, Action act)
-        {
-        }
-
-
         private void Log(string msg)
         {
             if (Logger != null)
                 Logger.Log("[CasualClient] " + msg);
         }
-
-
-
-
-
-
-
-
-
-
-
 
 
         private async Task Discord_MessageUpdated(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)

@@ -15,7 +15,6 @@ namespace PawDiscordBot.Commands
         private Dictionary<PremadeCommand, ActivePremadeCommand> _activeFeatures;
 
         private Dictionary<string, PawDiscordCommandBase> _customCommands;
-        //private Dictionary<string, CustomCommandDetailed> _detailedCustomCommands;
 
         public CommandStorage(PawDiscordBotClient client)
         {
@@ -65,17 +64,6 @@ namespace PawDiscordBot.Commands
                     PawDiscordCommandBase cmd = _customCommands[key];
                     handled = cmd.HandleMessage(message);
                 }
-                /*
-                if (!invoked && _detailedCustomCommands != null && _detailedCustomCommands.ContainsKey(key))
-                {
-                    CustomCommandDetailed cmd = _detailedCustomCommands[key];
-                    if (cmd?.Action != null)
-                    {
-                        System.Diagnostics.Debugger.Break();
-                        cmd.Action.Invoke(message);
-                        invoked = true;
-                    }
-                }*/
 
                 if (!handled)
                 {
