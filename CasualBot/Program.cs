@@ -34,17 +34,23 @@ namespace CasualBot
 
                 CasualBotClient client = new CasualBotClient(botKey);
                 client.Logger = new CasualBotLogger(botLogPath, true);
+                
+
                 // client.RegisterModule(typeof(NoPrefixModule));
                 client.Start(dsCfg);
+
+                client.Client.UserUpdated += Client_UserUpdated;
 
                 client.OnMessage = (message) =>
                 {
                     try
                     {
+                        // bangh - bongh
                         if (message.Content == "bangh")
                         {
                             message.Channel.SendMessageAsync("bongh", true);
                         }
+                        // addReaction() - addReaction MessageID Emote
                         else if (message.Content.StartsWith("addReaction"))
                         {
                             string[] strSplit = message.Content.Split(' ');
@@ -95,6 +101,8 @@ namespace CasualBot
 
 
 
+
+
                 ConsoleColor oldColor = Console.ForegroundColor;
                 bool doRun = true;
                 while (doRun)
@@ -127,6 +135,33 @@ namespace CasualBot
                 Console.Write("Finished, Press <ENTER> to lose");
                 Console.ReadLine();
             }
+        }
+
+        private static Task Client_UserUpdated(SocketUser arg1, SocketUser arg2)
+        {
+            //do consita stuff
+            if (arg1 is SocketGuildUser && arg2 is SocketGuildUser)
+            {
+                SocketGuildUser before = (SocketGuildUser)arg1;
+                SocketGuildUser after = (SocketGuildUser)arg2;
+
+                if (!before.Roles.Equals(after.Roles))
+                {
+                    //Roles were changed
+                    foreach (var role in before.Roles)
+                    {
+                        var Casual = after.Guild.GetRole(813345189048483860);
+                        if (role.Name.Equals("Casual - Officer"))
+                        {
+                            after.AddRoleAsync(Casual);
+                        }
+
+
+                    }
+                }
+            }
+
+            return Task.CompletedTask;
         }
 
         static ConsoleColor ChangeForeground(ConsoleColor newColor)
