@@ -12,24 +12,24 @@ namespace PawDiscordBot.Commands
     {
         private PawDiscordBotClient _client;
 
-        private Dictionary<PremadeCommand, ActivePremadeCommand> _activeFeatures;
+        private Dictionary<PremadeCommandType, PremadeCommand> _activeFeatures;
 
         private Dictionary<string, PawDiscordCommandBase> _customCommands;
 
         public CommandStorage(PawDiscordBotClient client)
         {
             _client = client;
-            _activeFeatures = new Dictionary<PremadeCommand, ActivePremadeCommand>();
+            _activeFeatures = new Dictionary<PremadeCommandType, PremadeCommand>();
             _customCommands = new Dictionary<string, PawDiscordCommandBase>();
 
-            AddActiveFeature(new ActivePremadeCommand(PremadeCommand.NONE, "", (m) => { }));
-            AddActiveFeature(new ActivePremadeCommand(PremadeCommand.PAUSE, "", PremadePause));
-            AddActiveFeature(new ActivePremadeCommand(PremadeCommand.UNPAUSE, "", PremadeUnpause));
-            AddActiveFeature(new ActivePremadeCommand(PremadeCommand.TEST_EXCEPTION_NULLPOINTER, "", (m) => { string temp = null; temp = temp.Substring(0, 1); }));
-            AddActiveFeature(new ActivePremadeCommand(PremadeCommand.TEST_EXCEPTION_PAWDISCORDBOT, "", (m) => throw new PawDiscordBotUserWarningException("This is a test error")));
+            AddActiveFeature(new PremadeCommand(PremadeCommandType.NONE, "", (m) => { }));
+            AddActiveFeature(new PremadeCommand(PremadeCommandType.PAUSE, "", PremadePause));
+            AddActiveFeature(new PremadeCommand(PremadeCommandType.UNPAUSE, "", PremadeUnpause));
+            AddActiveFeature(new PremadeCommand(PremadeCommandType.TEST_EXCEPTION_NULLPOINTER, "", (m) => { string temp = null; temp = temp.Substring(0, 1); }));
+            AddActiveFeature(new PremadeCommand(PremadeCommandType.TEST_EXCEPTION_PAWDISCORDBOT, "", (m) => throw new PawDiscordBotException(ExceptionType.WARN_USER, "This is a test error")));
         }
 
-        private void AddActiveFeature(ActivePremadeCommand apc)
+        private void AddActiveFeature(PremadeCommand apc)
         {
             if (apc != null)
                 _activeFeatures.Add(apc.Command, apc);
@@ -45,7 +45,7 @@ namespace PawDiscordBot.Commands
 
                 if (!result && _activeFeatures != null)
                 {
-                    ActivePremadeCommand af = GetActiveFeatureFromKey(key);
+                    PremadeCommand af = GetActiveFeatureFromKey(key);
                     result = af != null;
                 }
             }
@@ -67,7 +67,7 @@ namespace PawDiscordBot.Commands
 
                 if (!handled)
                 {
-                    ActivePremadeCommand af = GetActiveFeatureFromKey(key);
+                    PremadeCommand af = GetActiveFeatureFromKey(key);
                     if (af?.Implementation != null)
                     {
                         af.Implementation.Invoke(message);
@@ -81,13 +81,13 @@ namespace PawDiscordBot.Commands
 
 
         #region Premade Feature Methods
-        public void RemovePremadeCommand(PremadeCommand cmd)
+        public void RemovePremadeCommand(PremadeCommandType cmd)
         {
             if (_activeFeatures.ContainsKey(cmd))
                 _activeFeatures[cmd].Trigger = "";
         }
 
-        public void AddPremadeCommand(PremadeCommand cmd, string trigger)
+        public void AddPremadeCommand(PremadeCommandType cmd, string trigger)
         {
             if (string.IsNullOrEmpty(trigger))
                 return;
@@ -96,22 +96,22 @@ namespace PawDiscordBot.Commands
                 _activeFeatures[cmd].Trigger = trigger;
         }
 
-        public PremadeCommand GetPremadeCommandType(string key)
+        public PremadeCommandType GetPremadeCommandType(string key)
         {
-            PremadeCommand found = PremadeCommand.NONE;
-            ActivePremadeCommand apc = GetActiveFeatureFromKey(key);
+            PremadeCommandType found = PremadeCommandType.NONE;
+            PremadeCommand apc = GetActiveFeatureFromKey(key);
 
             if (apc != null)
                 found = apc.Command;
 
             return found;
         }
-        private ActivePremadeCommand GetActiveFeatureFromKey(string key)
+        private PremadeCommand GetActiveFeatureFromKey(string key)
         {
-            ActivePremadeCommand result = null;
+            PremadeCommand result = null;
             if (_activeFeatures != null)
             {
-                foreach (ActivePremadeCommand apc in _activeFeatures.Values)
+                foreach (PremadeCommand apc in _activeFeatures.Values)
                 {
                     if (!string.IsNullOrEmpty(apc?.Trigger) && apc.Trigger.Equals(key))
                     {
@@ -127,25 +127,25 @@ namespace PawDiscordBot.Commands
         #region Premade Actions
         private void PremadePause(SocketUserMessage msg)
         {
-            if (_activeFeatures.ContainsKey(PremadeCommand.PAUSE))
+            if (_activeFeatures.ContainsKey(PremadeCommandType.PAUSE))
             {
-                ActivePremadeCommand apc = _activeFeatures[PremadeCommand.PAUSE];
+                PremadeCommand apc = _activeFeatures[PremadeCommandType.PAUSE];
 
                 if (apc != null && apc.Trigger.Equals(msg.Content))
                 {
-                    _client.IgnoreReceivedMessages = true;
+                    _client.PauseMessaging = true;
                 }
             }
         }
         private void PremadeUnpause(SocketUserMessage msg)
         {
-            if (_activeFeatures.ContainsKey(PremadeCommand.UNPAUSE))
+            if (_activeFeatures.ContainsKey(PremadeCommandType.UNPAUSE))
             {
-                ActivePremadeCommand apc = _activeFeatures[PremadeCommand.UNPAUSE];
+                PremadeCommand apc = _activeFeatures[PremadeCommandType.UNPAUSE];
 
                 if (apc != null && apc.Trigger.Equals(msg.Content))
                 {
-                    _client.IgnoreReceivedMessages = false;
+                    _client.PauseMessaging = false;
                 }
             }
         }

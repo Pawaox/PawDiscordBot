@@ -11,7 +11,7 @@ namespace CasualBot.Commands
 {
     public class AddReactionToMessageCommand : ParameterCommand
     {
-        public AddReactionToMessageCommand() : base(new CustomCommandSettings("addReaction", 2)) { }
+        public AddReactionToMessageCommand() : base(new CommandSettings("addReaction", 2)) { }
 
         public override bool HandleCommand(SocketUserMessage message, string[] levels, string[] parameters)
         {

@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace PawDiscordBot.Commands
 {
+    /// <summary>
+    /// Base class which all commands should inherit from
+    /// </summary>
     public abstract class PawDiscordCommandBase
     {
         public abstract bool HandleMessage(SocketUserMessage message);

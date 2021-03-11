@@ -157,14 +157,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Commands\ActivePremadeCommand.cs" />
+    <Compile Include="Commands\PremadeCommand.cs" />
     <Compile Include="Commands\CommandStorage.cs" />
-    <Compile Include="Commands\CustomParameterCommand.cs" />
-    <Compile Include="Commands\CustomCommandSettings.cs" />
+    <Compile Include="Commands\ParameterCommand.cs" />
+    <Compile Include="Commands\CommandSettings.cs" />
     <Compile Include="Commands\SimpleCommand.cs" />
     <Compile Include="Commands\IPawDiscordCommand.cs" />
-    <Compile Include="Commands\PremadeCommand.cs" />
-    <Compile Include="Exceptions\PawDiscordBotUserWarningException.cs" />
+    <Compile Include="Commands\PremadeCommandType.cs" />
+    <Compile Include="Exceptions\ExceptionType.cs" />
     <Compile Include="IPawDiscordBotLogger.cs" />
     <Compile Include="PawDiscordBotClient.cs" />
     <Compile Include="Exceptions\PawDiscordBotException.cs" />

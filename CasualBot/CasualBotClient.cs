@@ -18,10 +18,10 @@ namespace CasualBot
             CanReplyWithErrors = true;
             CanReplyWithExceptions = true;
 
-            Commands.AddPremadeCommand(PremadeCommand.PAUSE, "¤pause");
-            Commands.AddPremadeCommand(PremadeCommand.UNPAUSE, "¤unpause");
-            Commands.AddPremadeCommand(PremadeCommand.TEST_EXCEPTION_PAWDISCORDBOT, "¤crash_a");
-            Commands.AddPremadeCommand(PremadeCommand.TEST_EXCEPTION_NULLPOINTER, "¤crash_b");
+            Commands.AddPremadeCommand(PremadeCommandType.PAUSE, "¤pause");
+            Commands.AddPremadeCommand(PremadeCommandType.UNPAUSE, "¤unpause");
+            Commands.AddPremadeCommand(PremadeCommandType.TEST_EXCEPTION_PAWDISCORDBOT, "¤crash_a");
+            Commands.AddPremadeCommand(PremadeCommandType.TEST_EXCEPTION_NULLPOINTER, "¤crash_b");
 
 
             Commands.AddCommand("bangh", new SimpleCommand(msg => msg.Channel.SendMessageAsync("bongh")));
@@ -40,7 +40,7 @@ namespace CasualBot
         {
             Client.UserUpdated += Client_UserUpdated;
 
-            OnMessage += (message) =>
+            OnUnhandledMessage += (message) =>
             {
                 try
                 {

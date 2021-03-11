@@ -15,25 +15,42 @@ namespace PawDiscordBot
     public abstract class PawDiscordBotClient : IDisposable
     {
         private string _key;
+
+        /// <summary>
+        /// Will be used as prefix in the Log() calls in this client
+        /// </summary>
         public string LogName { get; set; }
+
         public bool CanReplyWithErrors { get; set; }
         public bool CanReplyWithExceptions { get; set; }
+        public bool PauseMessaging { get; set; }
 
+        /// <summary>
+        /// Discord.NET CommandService object
+        /// </summary>
         private CommandService CommandService { get; set; }
 
+        /// <summary>
+        /// Discord.NET SocketClient object
+        /// </summary>
         public DiscordSocketClient Client { get; private set; }
 
-
+        /// <summary>
+        /// Contains implemented commands
+        /// </summary>
         public CommandStorage Commands { get; private set; }
+
         public IPawDiscordBotLogger Logger { get; set; }
 
-        public event Action<SocketUserMessage> OnMessage;
+        /// <summary>
+        /// Called for messages that are not otherwise handled within this client
+        /// </summary>
+        public event Action<SocketUserMessage> OnUnhandledMessage;
 
-        public bool IgnoreReceivedMessages { get; set; }
-
-        public PawDiscordBotClient(string key, string LogName = "DiscordBotClient")
+        public PawDiscordBotClient(string key, string botLogName = "DiscordBotClient")
         {
             this._key = key;
+            this.LogName = botLogName;
             Commands = new CommandStorage(this);
         }
 
@@ -53,13 +70,30 @@ namespace PawDiscordBot
             try { if (Client != null) Client.Dispose(); } catch { }
         }
 
+        /// <summary>
+        /// Called before Discord.NET Client.Start.Async
+        /// </summary>
         public abstract void ConnectionStarting();
+
+        /// <summary>
+        /// Called before Discord.NET Client.Start.Async
+        /// </summary>
         public abstract void ConnectionStarted();
 
+        /// <summary>
+        /// Starts everything needed to connect 
+        /// </summary>
+        /// <param name="socketConfig"></param>
         public async void Start(DiscordSocketConfig socketConfig)
         {
             if (string.IsNullOrEmpty(_key))
                 throw new PawDiscordBotException("Client Key cannot be null!");
+
+            if (Client != null)
+            {
+                try { Client.Dispose(); } catch { }
+                Client = null;
+            }
 
             Log("Creating Client...");
             Client = new DiscordSocketClient(socketConfig);
@@ -73,8 +107,8 @@ namespace PawDiscordBot
             await Client.StartAsync();
             ConnectionStarted();
 
+            //Connect to events
             Client.MessageReceived += Discord_MessageReceived;
-            Client.MessageUpdated += Discord_MessageUpdated;
             Client.Connected += () => { Log("Bot Connected!"); return Task.CompletedTask; };
             Client.Ready += () => { Log("Bot Ready!"); return Task.CompletedTask; };
 
@@ -93,22 +127,22 @@ namespace PawDiscordBot
         }
 
 
+        /// <summary>
+        /// Adds LogName as prefix to the message and nullchecks the 'Logger' property
+        /// </summary>
+        /// <param name="msg"></param>
         private void Log(string msg)
         {
             if (Logger != null)
-                Logger.Log("[CasualClient] " + msg);
+                Logger.Log(this.LogName + " " + msg);
         }
 
 
-        private async Task Discord_MessageUpdated(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
-        {
-            /*
-            // If the message was not in the cache, downloading it will result in getting a copy of `after`.
-            var message = await before.GetOrDownloadAsync();
-            Console.WriteLine($"{message} -> {after}");
-            */
-        }
-
+        /// <summary>
+        /// Event: Discord.NET MessageReceived
+        /// </summary>
+        /// <param name="arg">The SocketMessage object that triggered the event</param>
+        /// <returns></returns>
         private Task Discord_MessageReceived(SocketMessage arg)
         {
             return Task.Factory.StartNew(() =>
@@ -120,26 +154,27 @@ namespace PawDiscordBot
                     {
                         string key = message.Content;
 
+                        //Get first section of the message
                         int spacePos = key.IndexOf(' ');
                         if (spacePos > 0)
                             key = key.Split(' ')[0];
 
-                        if (IgnoreReceivedMessages)
+                        int prefixPosition = 0;
+                        if (message.HasMentionPrefix(Client.CurrentUser, ref prefixPosition))
+                            return;
+
+                        if (message.Author.IsBot) //Ignore messages from other bots
+                            return;
+
+                        if (PauseMessaging)
                         {
-                            if (Commands.GetPremadeCommandType(key) == PremadeCommand.UNPAUSE)
+                            //The only command allowed if paused is unpause
+                            if (Commands.GetPremadeCommandType(key) == PremadeCommandType.UNPAUSE)
                                 Commands.Invoke(key, message);
 
                             return;
                         }
 
-                        // Create a number to track where the prefix ends and the command begins
-                        int argPos = 0;
-
-                        if (message.HasMentionPrefix(Client.CurrentUser, ref argPos))
-                            return;
-
-                        if (message.Author.IsBot)
-                            return;
 
                         bool handled = false;
 
@@ -147,7 +182,7 @@ namespace PawDiscordBot
                         if (CommandService != null)
                         {
                             var context = new SocketCommandContext(Client, message);
-                            IResult res = CommandService.ExecuteAsync(context, argPos, null).Result;
+                            IResult res = CommandService.ExecuteAsync(context, prefixPosition, null).Result;
 
                             handled = res.IsSuccess;
                         }
@@ -162,33 +197,44 @@ namespace PawDiscordBot
                             }
                         }
 
-
-                        //Final, didn't handle it yet? Pass it on.
-                        if (!handled && OnMessage != null)
+                        //Final, didn't handle it yet? Pass it on to the OnMessage last resort.
+                        if (!handled && OnUnhandledMessage != null)
                         {
-                            OnMessage.Invoke(message);
+                            OnUnhandledMessage.Invoke(message);
                         }
-                    }
-                    catch (PawDiscordBotUserWarningException warnExc)
-                    {
-                        try
-                        {
-                            ReplyToError(message, warnExc.Message);
-                        }
-                        catch { }
                     }
                     catch(PawDiscordBotException exc)
                     {
-                        ReplyToException(message, exc.ToString());
+                        switch (exc.ExceptionType)
+                        {
+                            case ExceptionType.BASE:
+                                ReplyToException(message, exc.ToString());
+                                break;
+                            case ExceptionType.WARN_USER:
+                                ReplyToError(message, exc.Message);
+                                break;
+                        }
+
                     }
                     catch (Exception exc)
                     {
                         ReplyToException(message, exc.ToString());
                     }
                 }
+
+                //Should be the last 'else if'
+                else if (arg != null)
+                {
+                    Log("Received message of unhandled type (" + arg.GetType().FullName + ")");
+                }
             });
         }
 
+        /// <summary>
+        /// Event: When Discord.NET Client 'Log' event is called, call the IPawDiscordBotLogger implementation if present
+        /// </summary>
+        /// <param name="arg">The LogMessage from Discord.NET</param>
+        /// <returns></returns>
         private Task DiscordDotNetLog(LogMessage arg)
         {
             return Task.Factory.StartNew(() =>

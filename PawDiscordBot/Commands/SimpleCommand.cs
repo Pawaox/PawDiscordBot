@@ -8,6 +8,10 @@ using System.Threading.Tasks;
 
 namespace PawDiscordBot.Commands
 {
+    /// <summary>
+    /// Used to convert a simple textstring into an action.
+    /// Can be used as-is or inherited from to extend functionality
+    /// </summary>
     public class SimpleCommand : PawDiscordCommandBase
     {
         public Action<SocketUserMessage> Action { get; set; }
