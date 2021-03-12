@@ -71,12 +71,12 @@ namespace PawDiscordBot
         }
 
         /// <summary>
-        /// Called before Discord.NET Client.Start.Async
+        /// Called before Discord.NET Client.StartAsync
         /// </summary>
         public abstract void ConnectionStarting();
 
         /// <summary>
-        /// Called before Discord.NET Client.Start.Async
+        /// Called before Discord.NET Client.StartAsync
         /// </summary>
         public abstract void ConnectionStarted();
 
