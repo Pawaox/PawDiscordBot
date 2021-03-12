@@ -17,19 +17,19 @@ namespace PawDiscordBot.Commands
     {
         public virtual CommandSettings Settings { get; set; }
 
-        public Action<SocketUserMessage, string[], string[]> Action { get; set; }
+        public Action<PawDiscordBotClient, SocketUserMessage, string[], string[]> Action { get; set; }
 
         public ParameterCommand() { }
         public ParameterCommand(CommandSettings settings)
         {
             this.Settings = settings;
         }
-        public ParameterCommand(CommandSettings settings, Action<SocketUserMessage, string[], string[]> act) : this(settings)
+        public ParameterCommand(CommandSettings settings, Action<PawDiscordBotClient, SocketUserMessage, string[], string[]> act) : this(settings)
         {
             this.Action = act;
         }
 
-        public override bool HandleMessage(SocketUserMessage message)
+        public override bool HandleMessage(PawDiscordBotClient client, SocketUserMessage message)
         {
             string[] splt = message.Content.Split(' ');
 
@@ -56,9 +56,9 @@ namespace PawDiscordBot.Commands
                     throw new PawDiscordBotException(ExceptionType.WARN_USER, "Not enough arguments! Expected" + minCount + ", got " + splt.Length);
             }
 
-            return HandleCommand(message, levels.ToArray(), parameters.ToArray());
+            return HandleCommand(client, message, levels.ToArray(), parameters.ToArray());
         }
 
-        public abstract bool HandleCommand(SocketUserMessage msg, string[] levels, string[] parameters);
+        public abstract bool HandleCommand(PawDiscordBotClient client, SocketUserMessage msg, string[] levels, string[] parameters);
     }
 }

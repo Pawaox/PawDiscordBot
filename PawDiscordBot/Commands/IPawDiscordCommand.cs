@@ -12,6 +12,6 @@ namespace PawDiscordBot.Commands
     /// </summary>
     public abstract class PawDiscordCommandBase
     {
-        public abstract bool HandleMessage(SocketUserMessage message);
+        public abstract bool HandleMessage(PawDiscordBotClient client, SocketUserMessage message);
     }
 }

@@ -157,10 +157,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Commands\PremadeCommand.cs" />
+    <Compile Include="Commands\Premade\BasicPremadeCommand.cs" />
+    <Compile Include="Commands\Premade\PremadeCommand.cs" />
     <Compile Include="Commands\CommandStorage.cs" />
     <Compile Include="Commands\ParameterCommand.cs" />
     <Compile Include="Commands\CommandSettings.cs" />
+    <Compile Include="Commands\Premade\PausePremadeCommand.cs" />
     <Compile Include="Commands\SimpleCommand.cs" />
     <Compile Include="Commands\IPawDiscordCommand.cs" />
     <Compile Include="Commands\PremadeCommandType.cs" />
