@@ -69,7 +69,9 @@ namespace PawDiscordBot.Commands
                 if (!handled)
                 {
                     PremadeCommand pm = GetActiveFeatureFromKey(key);
-                    handled = pm.HandleMessage(_client, message);
+
+                    if (pm != null)
+                        handled = pm.HandleMessage(_client, message);
                 }
             }
 
