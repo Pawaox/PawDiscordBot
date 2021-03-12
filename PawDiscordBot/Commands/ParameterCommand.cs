@@ -29,7 +29,14 @@ namespace PawDiscordBot.Commands
             this.Action = act;
         }
 
-        public override bool HandleMessage(PawDiscordBotClient client, SocketUserMessage message)
+        /// <summary>
+        /// Sealed to avoid accidental overrides from future implementations.
+        /// This method calls HandleCommand, override that one instead!
+        /// </summary>
+        /// <param name="client">The PawDiscordBotClient object</param>
+        /// <param name="message">The message that triggered this command</param>
+        /// <returns></returns>
+        public sealed override bool HandleMessage(PawDiscordBotClient client, SocketUserMessage message)
         {
             string[] splt = message.Content.Split(' ');
 
