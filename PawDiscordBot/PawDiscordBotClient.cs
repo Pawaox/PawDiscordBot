@@ -23,6 +23,9 @@ namespace PawDiscordBot
 
         public bool CanReplyWithErrors { get; set; }
         public bool CanReplyWithExceptions { get; set; }
+        public bool CanReactToBotMessages { get; set; }
+        public bool ReactOnlyIfMentionedFirst { get; set; }
+
         public bool PauseMessaging { get; set; }
 
         /// <summary>
@@ -159,13 +162,16 @@ namespace PawDiscordBot
                         if (spacePos > 0)
                             key = key.Split(' ')[0];
 
+                        #region Check if allowed to react
+                        if (!CanReactToBotMessages && message.Author.IsBot)
+                            return;
+
                         int prefixPosition = 0;
-                        if (message.HasMentionPrefix(Client.CurrentUser, ref prefixPosition))
+                        if (ReactOnlyIfMentionedFirst && !message.HasMentionPrefix(Client.CurrentUser, ref prefixPosition))
                             return;
+                        #endregion
 
-                        if (message.Author.IsBot) //Ignore messages from other bots
-                            return;
-
+                        #region Paused?
                         if (PauseMessaging)
                         {
                             //The only command allowed if paused is unpause
@@ -174,7 +180,7 @@ namespace PawDiscordBot
 
                             return;
                         }
-
+                        #endregion
 
                         bool handled = false;
 
