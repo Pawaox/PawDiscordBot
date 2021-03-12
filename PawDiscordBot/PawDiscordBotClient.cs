@@ -157,20 +157,27 @@ namespace PawDiscordBot
                     {
                         string key = message.Content;
 
-                        //Get first section of the message
-                        int spacePos = key.IndexOf(' ');
-                        if (spacePos > 0)
-                            key = key.Split(' ')[0];
-
                         #region Check if allowed to react
                         if (!CanReactToBotMessages && message.Author.IsBot)
                             return;
 
                         int prefixPosition = 0;
-                        if (ReactOnlyIfMentionedFirst && !message.HasMentionPrefix(Client.CurrentUser, ref prefixPosition))
+                        message.HasMentionPrefix(Client.CurrentUser, ref prefixPosition);
+
+                        if (ReactOnlyIfMentionedFirst && prefixPosition <= 0)
                             return;
                         #endregion
 
+                        //Remove potential mention prefix and get first actual section of key
+                        if (prefixPosition > 0)
+                            key = key.Substring(prefixPosition);
+
+                        int spacePos = key.IndexOf(' ');
+                        if (spacePos > 0)
+                            key = key.Split(' ')[0];
+
+                        if (!string.IsNullOrEmpty(key))
+                            key = key.Trim();
                         #region Paused?
                         if (PauseMessaging)
                         {

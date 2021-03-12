@@ -17,6 +17,8 @@ namespace CasualBot
         {
             CanReplyWithErrors = true;
             CanReplyWithExceptions = true;
+            ReactOnlyIfMentionedFirst = false;
+            CanReactToBotMessages = false;
 
             Commands.AddPremadeCommand(PremadeCommandType.PAUSE, "¤pause");
             Commands.AddPremadeCommand(PremadeCommandType.UNPAUSE, "¤unpause");
