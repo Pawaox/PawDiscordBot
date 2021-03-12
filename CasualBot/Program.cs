@@ -24,20 +24,24 @@ namespace CasualBot
             {
                 string botKeyPath = "C:/discordclient.txt";
                 string botLogPath = "C:/discordBotLog.txt";
+                bool useWS4NetProvider = true;
 
                 string botKey = "";
                 if (File.Exists(botKeyPath))
                     botKey = File.ReadAllText(botKeyPath);
-
+                else
+                    throw new Exception("Couldn't find client key at " + botKeyPath);
 
                 DiscordSocketConfig dsCfg = new DiscordSocketConfig();
-                dsCfg.WebSocketProvider = Discord.Net.Providers.WS4Net.WS4NetProvider.Instance;
+                if (useWS4NetProvider)
+                    dsCfg.WebSocketProvider = Discord.Net.Providers.WS4Net.WS4NetProvider.Instance;
 
                 CasualBotClient client = new CasualBotClient(botKey);
                 client.Logger = new CasualBotLogger(botLogPath, true);
 
                 client.Start(dsCfg);
 
+                #region Console Input
                 ConsoleColor oldColor = Console.ForegroundColor;
                 bool doRun = true;
                 while (doRun)
@@ -60,6 +64,7 @@ namespace CasualBot
                             break;
                     }
                 }
+                #endregion
 
                 ChangeForeground(oldColor);
                 Thread.Sleep(4000);
@@ -72,7 +77,7 @@ namespace CasualBot
             }
         }
 
-
+        #region Console Helper Methods
         static ConsoleColor ChangeForeground(ConsoleColor newColor)
         {
             ConsoleColor oldColor = Console.ForegroundColor;
@@ -85,5 +90,6 @@ namespace CasualBot
             Console.BackgroundColor = newColor;
             return oldColor;
         }
+        #endregion
     }
 }
