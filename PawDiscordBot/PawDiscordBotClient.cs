@@ -3,6 +3,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using PawDiscordBot.Commands;
 using PawDiscordBot.Exceptions;
+using PawDiscordBot.Modules;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,10 +29,6 @@ namespace PawDiscordBot
 
         public bool PauseMessaging { get; set; }
 
-        /// <summary>
-        /// Discord.NET CommandService object
-        /// </summary>
-        private CommandService CommandService { get; set; }
 
         /// <summary>
         /// Discord.NET SocketClient object
@@ -42,6 +39,11 @@ namespace PawDiscordBot
         /// Contains implemented commands
         /// </summary>
         public CommandStorage Commands { get; private set; }
+
+        /// <summary>
+        /// Contains implemented modules
+        /// </summary>
+        public ModuleStorage Modules { get; private set; }
 
         public IPawDiscordBotLogger Logger { get; set; }
 
@@ -54,7 +56,13 @@ namespace PawDiscordBot
         {
             this._key = key;
             this.LogName = botLogName;
+
+            CommandService commandServ = new CommandService(new CommandServiceConfig() { LogLevel = LogSeverity.Debug });
+            commandServ.Log += DiscordDotNetLog;
+            commandServ.CommandExecuted += Discord_CommandExecuted;
+
             Commands = new CommandStorage(this);
+            Modules = new ModuleStorage(this, commandServ);
         }
 
         public void ReplyToError(SocketUserMessage message, string reply)
@@ -118,16 +126,6 @@ namespace PawDiscordBot
             await Task.Delay(-1);
         }
 
-        public Task RegisterModule(Type moduleType)
-        {
-            if (CommandService == null)
-            {
-                CommandService = new CommandService(new CommandServiceConfig() { LogLevel = LogSeverity.Debug });
-                CommandService.Log += DiscordDotNetLog;
-            }
-
-            return CommandService.AddModuleAsync(moduleType, null);
-        }
 
 
         /// <summary>
@@ -140,6 +138,20 @@ namespace PawDiscordBot
                 Logger.Log(this.LogName + " " + msg);
         }
 
+        /// <summary>
+        /// Event: Discord.NET CommandService CommandExecuted
+        /// </summary>
+        /// <param name="arg1"></param>
+        /// <param name="arg2"></param>
+        /// <param name="arg3"></param>
+        /// <returns></returns>
+        private Task Discord_CommandExecuted(Optional<CommandInfo> arg1, ICommandContext arg2, IResult arg3)
+        {
+            return Task.Factory.StartNew(() =>
+            {
+                string a = "B";
+            });
+        }
 
         /// <summary>
         /// Event: Discord.NET MessageReceived
@@ -192,12 +204,14 @@ namespace PawDiscordBot
                         bool handled = false;
 
                         //1. Check if registered in Discord Command Service
-                        if (CommandService != null)
+                        if (Modules != null)
                         {
+                            /*
                             var context = new SocketCommandContext(Client, message);
                             IResult res = CommandService.ExecuteAsync(context, prefixPosition, null).Result;
 
                             handled = res.IsSuccess;
+                            */
                         }
 
                         //2. Check if registered in custom CommandStorage

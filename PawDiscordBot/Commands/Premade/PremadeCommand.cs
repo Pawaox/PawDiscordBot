@@ -15,15 +15,15 @@ namespace PawDiscordBot.Commands.Premade
         /// <summary>
         /// The type of this command
         /// </summary>
-        internal PremadeCommandType Command { get; set; }
+        internal PremadeCommandType CommandType { get; set; }
 
         internal string Trigger { get; set; }
 
         internal PremadeCommand() { }
-        internal PremadeCommand(PremadeCommandType feat, string trigger)
+        internal PremadeCommand(PremadeCommandType type, string trig)
         {
-            this.Command = feat;
-            this.Trigger = Trigger;
+            this.CommandType = type;
+            this.Trigger = trig;
         }
     }
 }

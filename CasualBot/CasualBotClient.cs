@@ -20,6 +20,8 @@ namespace CasualBot
             ReactOnlyIfMentionedFirst = false;
             CanReactToBotMessages = false;
 
+            Modules.RegisterPremadeModule(PawDiscordBot.Modules.PremadeModuleType.MUSIC);
+
             Commands.AddPremadeCommand(PremadeCommandType.PAUSE, "¤pause");
             Commands.AddPremadeCommand(PremadeCommandType.UNPAUSE, "¤unpause");
             Commands.AddPremadeCommand(PremadeCommandType.TEST_EXCEPTION_PAWDISCORDBOT, "¤crash_a");

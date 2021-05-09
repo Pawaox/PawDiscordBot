@@ -168,6 +168,10 @@
     <Compile Include="Commands\PremadeCommandType.cs" />
     <Compile Include="Exceptions\ExceptionType.cs" />
     <Compile Include="IPawDiscordBotLogger.cs" />
+    <Compile Include="Modules\ModuleStorage.cs" />
+    <Compile Include="Modules\Premade\MusicModule.cs" />
+    <Compile Include="Modules\Premade\PremadeModule.cs" />
+    <Compile Include="Modules\PremadeModuleType.cs" />
     <Compile Include="PawDiscordBotClient.cs" />
     <Compile Include="Exceptions\PawDiscordBotException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

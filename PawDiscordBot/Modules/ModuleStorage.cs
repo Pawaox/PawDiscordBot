@@ -1,41 +1,70 @@
-﻿using Discord.WebSocket;
+﻿using Discord.Commands;
+using Discord.WebSocket;
+using PawDiscordBot.Commands;
 using PawDiscordBot.Commands.Premade;
 using PawDiscordBot.Exceptions;
+using PawDiscordBot.Modules.Premade;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PawDiscordBot.Commands
+namespace PawDiscordBot.Modules
 {
-    public class CommandStorage
+    public class ModuleStorage
     {
+        /// <summary>
+        /// Discord.NET CommandService object
+        /// </summary>
+        private CommandService _service;
         private PawDiscordBotClient _client;
 
-        private Dictionary<PremadeCommandType, PremadeCommand> _availableFeatures;
 
-        private Dictionary<string, PawDiscordCommandBase> _customCommands;
+        private Dictionary<PremadeModuleType, PremadeModule> _availableModules;
 
-        public CommandStorage(PawDiscordBotClient client)
+        public ModuleStorage(PawDiscordBotClient client, CommandService service)
         {
             _client = client;
-            _availableFeatures = new Dictionary<PremadeCommandType, PremadeCommand>();
-            _customCommands = new Dictionary<string, PawDiscordCommandBase>();
+            _service = service;
+            _availableModules = new Dictionary<PremadeModuleType, PremadeModule>();
 
-            CreateAvailableFeature(new BasicPremadeCommand(PremadeCommandType.NONE, "", null));
-            CreateAvailableFeature(new PausePremadeCommand(PremadeCommandType.PAUSE, "", true));
-            CreateAvailableFeature(new PausePremadeCommand(PremadeCommandType.UNPAUSE, "", false));
-            CreateAvailableFeature(new BasicPremadeCommand(PremadeCommandType.TEST_EXCEPTION_NULLPOINTER, "", (c, m) => { string temp = null; temp = temp.Substring(0, 1); }));
-            CreateAvailableFeature(new BasicPremadeCommand(PremadeCommandType.TEST_EXCEPTION_PAWDISCORDBOT, "", (c, m) => throw new PawDiscordBotException(ExceptionType.WARN_USER, "This is a test error")));
+            //CreateAvailableModule(new PremadeModule(PremadeModuleType.NONE, null));
+            CreateAvailableModule(new MusicModule(_client, PremadeModuleType.MUSIC, ""));
         }
 
-        private void CreateAvailableFeature(PremadeCommand apc)
+        private void CreateAvailableModule(PremadeModule pm)
         {
-            if (apc != null)
-                _availableFeatures.Add(apc.CommandType, apc);
+            if (pm != null)
+            {
+                _availableModules.Add(pm.ModuleType, pm);
+            }
         }
 
+
+        public Task<ModuleInfo> RegisterPremadeModule(PremadeModuleType type)
+        {
+            if (_service == null)
+                return Task.Factory.StartNew<ModuleInfo>(() => { return null; });
+
+            return Task.Factory.StartNew(() =>
+            {
+                ModuleInfo mif = null;
+
+                if (_availableModules.ContainsKey(type))
+                {
+                    PremadeModule pm = _availableModules[type];
+
+                    mif = _service.AddModuleAsync(typeof(MusicModule), null).Result;
+                    if (mif != null)
+                        _availableModules.Add(pm.ModuleType, pm);
+                }
+
+                return mif;
+            });
+        }
+
+        /*
         public bool Contains(string key)
         {
             bool result = false;
@@ -44,7 +73,7 @@ namespace PawDiscordBot.Commands
                 if (!result && _customCommands != null)
                     result = _customCommands.ContainsKey(key);
 
-                if (!result && _availableFeatures != null)
+                if (!result && _availableModules != null)
                 {
                     PremadeCommand pm = GetActiveFeatureFromKey(key);
                     result = pm != null;
@@ -53,7 +82,7 @@ namespace PawDiscordBot.Commands
 
             return result;
         }
-
+        
         public bool Invoke(string key, SocketUserMessage message)
         {
             bool handled = false;
@@ -77,13 +106,14 @@ namespace PawDiscordBot.Commands
 
             return handled;
         }
-
+        */
 
         #region Premade Feature Methods
+        /*
         public void RemovePremadeCommand(PremadeCommandType cmd)
         {
-            if (_availableFeatures.ContainsKey(cmd))
-                _availableFeatures[cmd].Trigger = "";
+            if (_availableModules.ContainsKey(cmd))
+                _availableModules[cmd].Trigger = "";
         }
 
         public void AddPremadeCommand(PremadeCommandType cmd, string trigger)
@@ -91,8 +121,8 @@ namespace PawDiscordBot.Commands
             if (string.IsNullOrEmpty(trigger))
                 return;
 
-            if (_availableFeatures.ContainsKey(cmd))
-                _availableFeatures[cmd].Trigger = trigger;
+            if (_availableModules.ContainsKey(cmd))
+                _availableModules[cmd].Trigger = trigger;
         }
 
         public PremadeCommandType GetPremadeCommandType(string key)
@@ -108,9 +138,9 @@ namespace PawDiscordBot.Commands
         private PremadeCommand GetActiveFeatureFromKey(string key)
         {
             PremadeCommand result = null;
-            if (_availableFeatures != null)
+            if (_availableModules != null)
             {
-                foreach (PremadeCommand apc in _availableFeatures.Values)
+                foreach (PremadeCommand apc in _availableModules.Values)
                 {
                     if (!string.IsNullOrEmpty(apc?.Trigger) && apc.Trigger.Equals(key))
                     {
@@ -122,9 +152,9 @@ namespace PawDiscordBot.Commands
 
             return result;
         }
-
+        */
         #endregion
-
+        /*
 
         #region Add/Get Commands
         public void AddCommand(string cmd, SimpleCommand command)
@@ -152,5 +182,6 @@ namespace PawDiscordBot.Commands
 
         }
         #endregion
+        */
     }
 }
