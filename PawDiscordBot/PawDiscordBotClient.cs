@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace PawDiscordBot
+
 {
     public abstract class PawDiscordBotClient : IDisposable
     {
@@ -26,6 +27,11 @@ namespace PawDiscordBot
         public bool CanReplyWithExceptions { get; set; }
         public bool CanReactToBotMessages { get; set; }
         public bool ReactOnlyIfMentionedFirst { get; set; }
+        /// <summary>
+        /// Item1: Guild ID
+        /// Item2: Channel ID
+        /// </summary>
+        public Tuple<ulong, ulong> AllowedServerChannelCombo { get; set; }
 
         public bool PauseMessaging { get; set; }
 
@@ -165,9 +171,14 @@ namespace PawDiscordBot
                 if (arg is SocketUserMessage)
                 {
                     SocketUserMessage message = (SocketUserMessage)arg;
+                    SocketTextChannel textChannel = null;
+
                     try
                     {
                         string key = message.Content;
+
+                        if (message.Channel is SocketTextChannel)
+                            textChannel = (SocketTextChannel)message.Channel;
 
                         #region Check if allowed to react
                         if (!CanReactToBotMessages && message.Author.IsBot)
@@ -178,6 +189,15 @@ namespace PawDiscordBot
 
                         if (ReactOnlyIfMentionedFirst && prefixPosition <= 0)
                             return;
+
+                        if (AllowedServerChannelCombo != null)
+                        {
+                            ulong allowedServer = AllowedServerChannelCombo.Item1;
+                            ulong allowedChannel = AllowedServerChannelCombo.Item2;
+
+                            if (!textChannel.Guild.Id.Equals(allowedServer) || !textChannel.Id.Equals(allowedChannel))
+                                return;
+                        }
                         #endregion
 
                         //Remove potential mention prefix and get first actual section of key
