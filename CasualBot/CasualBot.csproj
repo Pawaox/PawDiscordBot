@@ -47,7 +47,6 @@
     <Compile Include="CasualBotClient.cs" />
     <Compile Include="CasualBotLogger.cs" />
     <Compile Include="Commands\AddReactionCommand.cs" />
-    <Compile Include="Commands\CasualSimpleCommand.cs" />
     <Compile Include="Modules\NoPrefixModule.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

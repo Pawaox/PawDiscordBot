@@ -12,7 +12,7 @@ namespace PawDiscordBot.Commands
     /// Used to convert a simple textstring into an action.
     /// Can be used as-is or inherited from to extend functionality
     /// </summary>
-    public abstract class SimpleCommand : PawDiscordCommandBase
+    public class SimpleCommand : PawDiscordCommandBase
     {
         public Action<SocketUserMessage> Action { get; set; }
 

@@ -20,7 +20,7 @@ namespace CasualBot
             ReactOnlyIfMentionedFirst = false;
             CanReactToBotMessages = false;
 
-            Modules.RegisterPremadeModule(PawDiscordBot.Modules.PremadeModuleType.MUSIC);
+            //Modules.RegisterPremadeModule(PawDiscordBot.Modules.PremadeModuleType.MUSIC);
 
             Commands.AddPremadeCommand(PremadeCommandType.PAUSE, "¤pause");
             Commands.AddPremadeCommand(PremadeCommandType.UNPAUSE, "¤unpause");
@@ -28,9 +28,9 @@ namespace CasualBot
             Commands.AddPremadeCommand(PremadeCommandType.TEST_EXCEPTION_NULLPOINTER, "¤crash_b");
 
 
-            Commands.AddCommand("bangh", new CasualSimpleCommand(msg => msg.Channel.SendMessageAsync("bongh")));
-            Commands.AddCommand("brown", new CasualSimpleCommand(msg => msg.Channel.SendMessageAsync("brown = down")));
-            Commands.AddCommand("red", new CasualSimpleCommand(msg => msg.Channel.SendMessageAsync("red = ded")));
+            Commands.AddCommand("bangh", new SimpleCommand(msg => msg.Channel.SendMessageAsync("bongh")));
+            Commands.AddCommand("brown", new SimpleCommand(msg => msg.Channel.SendMessageAsync("brown = down")));
+            Commands.AddCommand("red", new SimpleCommand(msg => msg.Channel.SendMessageAsync("red = ded")));
 
 
             Commands.AddCommand(new AddReactionToMessageCommand());
