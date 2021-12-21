@@ -26,6 +26,7 @@ namespace PawDiscordBot.Commands
             CreateAvailableFeature(new BasicPremadeCommand(PremadeCommandType.NONE, "", null));
             CreateAvailableFeature(new PausePremadeCommand(PremadeCommandType.PAUSE, "", true));
             CreateAvailableFeature(new PausePremadeCommand(PremadeCommandType.UNPAUSE, "", false));
+            CreateAvailableFeature(new PurgePremadeCommand(""));
             CreateAvailableFeature(new BasicPremadeCommand(PremadeCommandType.TEST_EXCEPTION_NULLPOINTER, "", (c, m) => { string temp = null; temp = temp.Substring(0, 1); }));
             CreateAvailableFeature(new BasicPremadeCommand(PremadeCommandType.TEST_EXCEPTION_PAWDISCORDBOT, "", (c, m) => throw new PawDiscordBotException(ExceptionType.WARN_USER, "This is a test error")));
         }

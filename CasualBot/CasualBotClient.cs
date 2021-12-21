@@ -24,6 +24,7 @@ namespace CasualBot
 
             Commands.AddPremadeCommand(PremadeCommandType.PAUSE, "¤pause");
             Commands.AddPremadeCommand(PremadeCommandType.UNPAUSE, "¤unpause");
+            Commands.AddPremadeCommand(PremadeCommandType.PURGE, "¤purge");
             Commands.AddPremadeCommand(PremadeCommandType.TEST_EXCEPTION_PAWDISCORDBOT, "¤crash_a");
             Commands.AddPremadeCommand(PremadeCommandType.TEST_EXCEPTION_NULLPOINTER, "¤crash_b");
 
@@ -81,6 +82,10 @@ namespace CasualBot
                     }
                 }
             });
+        }
+
+        public override void Ready()
+        {
         }
     }
 }

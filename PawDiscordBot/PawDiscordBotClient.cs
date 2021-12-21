@@ -98,6 +98,11 @@ namespace PawDiscordBot
         public abstract void ConnectionStarted();
 
         /// <summary>
+        /// Called on Discord.NET Client.Ready
+        /// </summary>
+        public abstract void Ready();
+
+        /// <summary>
         /// Starts everything needed to connect 
         /// </summary>
         /// <param name="socketConfig"></param>
@@ -127,7 +132,7 @@ namespace PawDiscordBot
             //Connect to events
             Client.MessageReceived += Discord_MessageReceived;
             Client.Connected += () => { Log("Bot Connected!"); return Task.CompletedTask; };
-            Client.Ready += () => { Log("Bot Ready!"); return Task.CompletedTask; };
+            Client.Ready += () => { Log("Bot Ready!"); Ready(); return Task.CompletedTask; };
 
             await Task.Delay(-1);
         }
@@ -155,7 +160,6 @@ namespace PawDiscordBot
         {
             return Task.Factory.StartNew(() =>
             {
-                string a = "B";
             });
         }
 

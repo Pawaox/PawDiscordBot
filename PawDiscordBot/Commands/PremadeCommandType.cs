@@ -15,6 +15,8 @@ namespace PawDiscordBot.Commands
         PAUSE,
         UNPAUSE,
 
+        PURGE,
+
         TEST_EXCEPTION_PAWDISCORDBOT,
         TEST_EXCEPTION_NULLPOINTER
     }

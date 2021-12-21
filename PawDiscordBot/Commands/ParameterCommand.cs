@@ -60,7 +60,7 @@ namespace PawDiscordBot.Commands
                         levels.Add(splt[i]);
                 }
                 else
-                    throw new PawDiscordBotException(ExceptionType.WARN_USER, "Not enough arguments! Expected" + minCount + ", got " + splt.Length);
+                    throw new PawDiscordBotException(ExceptionType.WARN_USER, "Not enough arguments! Expected " + (minCount - 1) + ", got " + (splt.Length - 1));
             }
 
             return HandleCommand(client, message, levels.ToArray(), parameters.ToArray());

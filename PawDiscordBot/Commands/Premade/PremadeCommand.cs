@@ -10,17 +10,17 @@ namespace PawDiscordBot.Commands.Premade
     /// <summary>
     /// 'Wrap-class' combining the information needed for premade commands
     /// </summary>
-    internal abstract class PremadeCommand : PawDiscordCommandBase
+    public abstract class PremadeCommand : PawDiscordCommandBase
     {
         /// <summary>
         /// The type of this command
         /// </summary>
-        internal PremadeCommandType CommandType { get; set; }
+        public PremadeCommandType CommandType { get; set; }
 
-        internal string Trigger { get; set; }
+        public string Trigger { get; set; }
 
-        internal PremadeCommand() { }
-        internal PremadeCommand(PremadeCommandType type, string trig)
+        public PremadeCommand() { }
+        public PremadeCommand(PremadeCommandType type, string trig)
         {
             this.CommandType = type;
             this.Trigger = trig;
