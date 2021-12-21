@@ -10,6 +10,9 @@
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="2.4.0" />
     <PackageReference Include="Discord.Net.Providers.WS4Net" Version="2.4.0" />
+    <PackageReference Include="Google.Apis.Script.v1" Version="1.55.0.2375" />
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>

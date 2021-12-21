@@ -1,8 +1,16 @@
 ﻿using Discord.WebSocket;
 using GnomeParsingBot;
+using GnomeParsingBot.WarcraftLogs;
 
 try
 {
+    StaticData.Initialize("Gnome Lovers", "Gehennas", WarcraftLogsClient.Region.EU);
+
+    using (WarcraftLogsClient wcl = new WarcraftLogsClient())
+    {
+        wcl.Test();
+    }
+
     string botKeyPath = "C:/discordclient.txt";
     string botLogPath = "C:/discordBotLog.txt";
     bool useWS4NetProvider = true;
@@ -27,7 +35,7 @@ try
     bool doRun = true;
     while (doRun)
     {
-        string input = Console.ReadLine();
+        string? input = Console.ReadLine();
 
         switch (input?.ToLower() ?? "")
         {
