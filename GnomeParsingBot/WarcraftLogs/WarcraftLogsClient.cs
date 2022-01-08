@@ -1,4 +1,7 @@
-﻿using Google.Apis.Auth.OAuth2;
+﻿using GnomeParsingBot.GoogleAPI;
+using GnomeParsingBot.WarcraftLogs.DTOs;
+using GnomeParsingBot.WarcraftLogs.RequestResponse;
+using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Script.v1;
@@ -20,63 +23,69 @@ namespace GnomeParsingBot.WarcraftLogs
 {
     internal class WarcraftLogsClient : IDisposable
     {
-        const string BASE_URL = "https://classic.warcraftlogs.com:443/";
-        const string API_KEY_PATH = "C://warcraftlogs_apiKey.txt";
-
         private string _apiKey;
+        private string _baseUrl;
 
         private HttpClient _client;
 
         /// <summary>
-        /// Requires the WarcraftLogs API Key to be located at API_KEY_PATH
         /// </summary>
-        public WarcraftLogsClient()
+        /// <param name="baseWarcraftLogsUrl">if null or empty, DEFAULT_BASE_URL will be used instead</param>
+        /// <param name="apiKeyPath">if null or empty, DEFAULT_API_KEY_PATH will be used instead</param>
+        /// <exception cref="FileNotFoundException"></exception>
+        public WarcraftLogsClient(string apiKeyPath, string baseWarcraftLogsUrl = null)
         {
+            if (string.IsNullOrEmpty(apiKeyPath))
+                apiKeyPath = StaticData.PATH_KEY_BASE;
+            if (string.IsNullOrEmpty(baseWarcraftLogsUrl))
+                baseWarcraftLogsUrl = StaticData.URL_WARCRAFTLOGS;
+
             _client = new HttpClient();
-            if (System.IO.File.Exists(API_KEY_PATH))
-                _apiKey = System.IO.File.ReadAllText(API_KEY_PATH);
+            if (System.IO.File.Exists(apiKeyPath))
+                _apiKey = System.IO.File.ReadAllText(apiKeyPath);
             else
-                throw new FileNotFoundException("Couldn't find API Key at " + API_KEY_PATH);
+                throw new FileNotFoundException("Couldn't find API Key at " + apiKeyPath);
+
+            _baseUrl = baseWarcraftLogsUrl;
         }
 
-        public void Test()
+        public GenerateSheetsResult GenerateSheets(UserCredential credentials, string logID)
         {
-            string[] scope = { SheetsService.Scope.Spreadsheets };
-            GoogleCredential sheetCredentials = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile("C://gnomeparsing_google_credentials_serviceUser.json").CreateScoped(scope);
+            GenerateSheetsResult result = new GenerateSheetsResult();
+                        
+            CombatLogAnalytics cla = new CombatLogAnalytics(credentials);
+            cla.PrepareSheet(_apiKey, logID);
+            bool populate = cla.PopulateDataSheets();
 
-            // Create Google Sheets API service.
-            var sheetService = new SheetsService(new BaseClientService.Initializer()
+            if (populate)
             {
-                HttpClientInitializer = sheetCredentials,
-                ApplicationName = "GnomeParsing - RPB and CLA",
-            });
+                result.SpreadSheetCLA_URL = cla.ExportSheetData();
+            }
 
-            // Define request parameters.
-            string spreadsheetId = ADD;
-            string rangeApiKey = "Instructions!E9";
-            string rangeLogId = "Instructions!E11";
+            RolePerformanceBreakdown rpb = new RolePerformanceBreakdown(credentials);
+            rpb.PrepareSheet(_apiKey, logID);
+            rpb.GenerateSheetData();
+            rpb.FixRoles();
+            result.SpreadSheetRPB_URL = rpb.ExportSheetData();
 
-            IList<IList<object>> valueData = new List<IList<object>>();
-            valueData.Add(new List<object>());
-            valueData[0].Add(_apiKey);
+            //Clean up URL and extract sheetID into own property
 
-            ValueRange valueRange = new ValueRange();
-            valueRange.Values = valueData;
+            int index = result.SpreadSheetCLA_URL.LastIndexOf('/');
+            string properURL = result.SpreadSheetCLA_URL.Substring(0, index);
+            index = properURL.LastIndexOf('/');
+            result.SpreadSheetCLA_SheetID = properURL.Substring(index + 1);
+            result.SpreadSheetCLA_URL = properURL + "/";
 
-            SpreadsheetsResource.ValuesResource.UpdateRequest updateSheetCellRequest = sheetService.Spreadsheets.Values.Update(valueRange, spreadsheetId, rangeApiKey);
-            updateSheetCellRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
-            updateSheetCellRequest.Execute();
+            index = result.SpreadSheetRPB_URL.LastIndexOf('/');
+            properURL = result.SpreadSheetRPB_URL.Substring(0, index);
+            index = properURL.LastIndexOf('/');
+            result.SpreadSheetRPB_SheetID = properURL.Substring(index + 1);
+            result.SpreadSheetRPB_URL = properURL + "/";
 
-            valueData.Clear();
-            valueData.Add(new List<object>());
-            valueData[0].Add(StaticData.URL_WARCRAFTLOGS_REPORTS + "aLqrxJj2vnQ7zYDA" + "/");
-            valueRange = new ValueRange();
-            valueRange.Values = valueData;
-
-            updateSheetCellRequest = sheetService.Spreadsheets.Values.Update(valueRange, spreadsheetId, rangeLogId);
-            updateSheetCellRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
-            updateSheetCellRequest.Execute();
+            return result;
         }
+
+
 
         public Dictionary<LoggedRaid, List<string>> GetLogs(string guild, string server, Region region, DateTime onDate)
         {
@@ -105,7 +114,7 @@ namespace GnomeParsingBot.WarcraftLogs
             if (toUnixStamp <= 0)
                 throw new ArgumentNullException("toUnixStamp");
 
-            string path = BASE_URL + $"v1/reports/guild/{guild.Replace(" ", "%20").ToLower()}/{server.ToLower()}/{RegionToString(region)}?start={fromUnixStamp}&end={toUnixStamp}&api_key={_apiKey}";
+            string path = _baseUrl + $"v1/reports/guild/{guild.Replace(" ", "%20").ToLower()}/{server.ToLower()}/{RegionToString(region)}?start={fromUnixStamp}&end={toUnixStamp}&api_key={_apiKey}";
             HttpResponseMessage msg = _client.GetAsync(path).Result;
 
             if (msg != null && msg.IsSuccessStatusCode)
@@ -133,10 +142,344 @@ namespace GnomeParsingBot.WarcraftLogs
             return result;
         }
 
+        public Dictionary<string, int> GetDeaths(string logID)
+        {
+            Dictionary<string, int> deathCount = new Dictionary<string, int>();
+
+            if (string.IsNullOrEmpty(logID))
+                throw new ArgumentNullException("logID");
+
+            string path = _baseUrl + $"v1/report/tables/deaths/{logID}?start={0}&end={99999999}&api_key={_apiKey}";
+            HttpResponseMessage msg = _client.GetAsync(path).Result;
+
+            if (msg != null && msg.IsSuccessStatusCode)
+            {
+                DeathsDTO deaths = JsonConvert.DeserializeObject<DeathsDTO>(msg.Content.ReadAsStringAsync().Result);
+
+                if (deaths != null)
+                {
+                    foreach (DeathsDTO.Entry death in deaths.entries)
+                    {
+                        if (!deathCount.ContainsKey(death.name))
+                            deathCount.Add(death.name, 1);
+                        else
+                            deathCount[death.name] += 1;
+                    }
+                }
+            }
+
+            return deathCount;
+        }
+
+
+
+        public GetDamageDoneResponse GetDamageDone(string logID, LoggedRaid raidForEncounters)
+        {
+            GetDamageDoneResponse resp = new GetDamageDoneResponse();
+            resp.TotalDamage = new Dictionary<string, long>();
+            resp.TrashDamage = new Dictionary<string, long>();
+            resp.BossDamage = new Dictionary<string, long>();
+
+            if (string.IsNullOrEmpty(logID))
+                throw new ArgumentNullException("logID");
+
+
+            string path = _baseUrl + $"v1/report/tables/damage-done/{logID}?start={0}&end={99999999}&by=source&api_key={_apiKey}";
+            HttpResponseMessage msg = _client.GetAsync(path).Result;
+
+            if (msg != null && msg.IsSuccessStatusCode)
+            {
+                DamageDoneTableDTO dmg = JsonConvert.DeserializeObject<DamageDoneTableDTO>(msg.Content.ReadAsStringAsync().Result);
+
+                if (dmg != null)
+                {
+                    foreach (DamageDoneTableDTO.Entry entry in dmg.entries)
+                    {
+                        if (!resp.TotalDamage.ContainsKey(entry.name))
+                            resp.TotalDamage.Add(entry.name, entry.total);
+                        else
+                            resp.TotalDamage[entry.name] += entry.total;
+                    }
+                }
+            }
+
+            int[] encounters = GetEncountersForRaid(raidForEncounters);
+
+            foreach (int enc in encounters)
+            {
+                path = _baseUrl + $"v1/report/tables/damage-done/{logID}?start={0}&end={99999999}&by=source&api_key={_apiKey}&encounter={enc}";
+                msg = _client.GetAsync(path).Result;
+
+                if (msg != null && msg.IsSuccessStatusCode)
+                {
+                    DamageDoneTableDTO dmg = JsonConvert.DeserializeObject<DamageDoneTableDTO>(msg.Content.ReadAsStringAsync().Result);
+
+                    if (dmg != null)
+                    {
+                        foreach (DamageDoneTableDTO.Entry entry in dmg.entries)
+                        {
+                            if (!resp.BossDamage.ContainsKey(entry.name))
+                                resp.BossDamage.Add(entry.name, entry.total);
+                            else
+                                resp.BossDamage[entry.name] += entry.total;
+                        }
+                    }
+                }
+            }
+
+            foreach (var pair in resp.TotalDamage)
+            {
+                if (!resp.TrashDamage.ContainsKey(pair.Key))
+                    resp.TrashDamage.Add(pair.Key, pair.Value);
+                else
+                    resp.TrashDamage[pair.Key] += pair.Value;
+            }
+
+            foreach (var pair in resp.BossDamage)
+            {
+                if (resp.TrashDamage.ContainsKey(pair.Key))
+                    resp.TrashDamage[pair.Key] -= pair.Value;
+            }
+
+            return resp;
+        }
+
+
+
+        public Dictionary<string, long> GetHealingDone(string logID)
+        {
+            Dictionary<string, long> healing = new Dictionary<string, long>();
+
+            if (string.IsNullOrEmpty(logID))
+                throw new ArgumentNullException("logID");
+
+            string path = _baseUrl + $"v1/report/tables/healing/{logID}?start={0}&end={99999999}&api_key={_apiKey}";
+            HttpResponseMessage msg = _client.GetAsync(path).Result;
+
+            if (msg != null && msg.IsSuccessStatusCode)
+            {
+                HealingDoneDTO heals = JsonConvert.DeserializeObject<HealingDoneDTO>(msg.Content.ReadAsStringAsync().Result);
+
+                if (heals != null)
+                {
+                    foreach (HealingDoneDTO.Entry entry in heals.entries)
+                    {
+                        if (!healing.ContainsKey(entry.name))
+                            healing.Add(entry.name, entry.total);
+                        else
+                            healing[entry.name] += entry.total;
+                    }
+                }
+            }
+
+            return healing;
+        }
+
+        public Dictionary<string, long> GetChickenProcs(string logID)
+        {
+            Dictionary<string, long> chickenProcs = new Dictionary<string, long>();
+
+            Dictionary<int, string> chickenToPlayer = new Dictionary<int, string>();
+
+            if (string.IsNullOrEmpty(logID))
+                throw new ArgumentNullException("logID");
+
+            string path = _baseUrl + $"v1/report/tables/damage-done/{logID}?start={0}&end={99999999}&api_key={_apiKey}";
+            HttpResponseMessage msg = _client.GetAsync(path).Result;
+
+            #region Map Chickens to players
+            if (msg != null && msg.IsSuccessStatusCode)
+            {
+                DamageDoneTableDTO heals = JsonConvert.DeserializeObject<DamageDoneTableDTO>(msg.Content.ReadAsStringAsync().Result);
+
+                if (heals != null)
+                {
+                    foreach (DamageDoneTableDTO.Entry entry in heals.entries)
+                    {
+                        if (entry.pets != null && entry.pets.Length > 0)
+                        {
+                            foreach (DamageDoneTableDTO.Pet pet in entry.pets)
+                            {
+                                if ("Battle Chicken".Equals(pet.name))
+                                {
+                                    if (!chickenToPlayer.ContainsKey(pet.id))
+                                        chickenToPlayer.Add(pet.id, entry.name);
+                                    else
+                                        chickenToPlayer[pet.id] = entry.name;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            #endregion
+
+
+            path = _baseUrl + $"v1/report/tables/buffs/{logID}?start={0}&end={99999999}&api_key={_apiKey}&abilityid={23060}&by=target";
+            msg = _client.GetAsync(path).Result;
+
+            if (msg != null && msg.IsSuccessStatusCode)
+            {
+                BuffTablesDTO buffs = JsonConvert.DeserializeObject<BuffTablesDTO>(msg.Content.ReadAsStringAsync().Result);
+
+                if (buffs != null)
+                {
+                    foreach (BuffTablesDTO.Aura aura in buffs.auras)
+                    {
+                        if (chickenToPlayer.ContainsKey(aura.id))
+                        {
+                            if ("Battle Chicken".Equals(aura.name))
+                            {
+                                string playerName = chickenToPlayer[aura.id];
+                                if (!chickenProcs.ContainsKey(playerName))
+                                    chickenProcs.Add(playerName, aura.totalUses);
+                                else
+                                    chickenProcs[playerName] += aura.totalUses;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return chickenProcs;
+        }
+
+        public Dictionary<string, long> GetConsumableUse(string logID, GetConsumableUseRequest consumable)
+        {
+            Dictionary<string, long> uses = new Dictionary<string, long>();
+
+            Dictionary<int, string> sourceIDToPlayer = new Dictionary<int, string>();
+
+            if (string.IsNullOrEmpty(logID))
+                throw new ArgumentNullException("logID");
+            if (consumable == null)
+                throw new ArgumentNullException("consumable");
+            if (consumable.SpellID <= 0)
+                throw new ArgumentOutOfRangeException("spellID cannot be <= 0");
+
+            string path = _baseUrl + $"v1/report/tables/damage-done/{logID}?start={0}&end={99999999}&api_key={_apiKey}";
+            HttpResponseMessage msg = _client.GetAsync(path).Result;
+
+            #region Map IDs to players
+            if (msg != null && msg.IsSuccessStatusCode)
+            {
+                DamageDoneTableDTO heals = JsonConvert.DeserializeObject<DamageDoneTableDTO>(msg.Content.ReadAsStringAsync().Result);
+
+                if (heals != null)
+                {
+                    foreach (DamageDoneTableDTO.Entry entry in heals.entries)
+                    {
+                        if (!sourceIDToPlayer.ContainsKey(entry.id))
+                            sourceIDToPlayer.Add(entry.id, entry.name);
+                        else
+                            sourceIDToPlayer[entry.id] = entry.name;
+                    }
+                }
+            }
+            #endregion
+
+            path = _baseUrl + $"v1/report/events/casts/{logID}?start={0}&end={99999999}&api_key={_apiKey}&abilityid={consumable.SpellID}";
+            msg = _client.GetAsync(path).Result;
+
+            if (msg != null && msg.IsSuccessStatusCode)
+            {
+                CastEventsDTO casts = JsonConvert.DeserializeObject<CastEventsDTO>(msg.Content.ReadAsStringAsync().Result);
+
+                if (casts != null)
+                {
+                    foreach (CastEventsDTO.Event ev in casts.events)
+                    {
+                        if ("cast".Equals(ev.type))
+                        {
+                            if (ev.ability != null/* && consumable.Name.Equals(ev.ability.name)*/)
+                            {
+                                if (sourceIDToPlayer.ContainsKey(ev.sourceID))
+                                {
+                                    string playerName = sourceIDToPlayer[ev.sourceID];
+
+                                    if (!uses.ContainsKey(playerName))
+                                        uses.Add(playerName, 1);
+                                    else
+                                        uses[playerName] += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return uses;
+        }
+
         public void Dispose()
         {
+            _apiKey = null;
+            _baseUrl = null;
+
             if (_client != null)
                 _client.Dispose();
+        }
+
+        private int[] GetEncountersForRaid(LoggedRaid r)
+        {
+            int[] res = new int[0];
+
+            List<int> twoInOne = new List<int>();
+
+            switch (r)
+            {
+                case LoggedRaid.KARAZHAN:
+                    res = new int[] { 652, 653, 654, 655, 656, 657, 658, 659, 661, 662 };
+                    break;
+
+                case LoggedRaid.GRUUL:
+                    res = new int[] { 649, 650 };
+                    break;
+                case LoggedRaid.MAG:
+                    res = new int[] { 651 };
+                    break;
+
+
+                case LoggedRaid.SSC:
+                    res = new int[] { 623, 624, 625, 626, 627, 628 };
+                    break;
+                case LoggedRaid.TK:
+                    res = new int[] { 730, 731, 732, 733 };
+                    break;
+
+
+                case LoggedRaid.HYJAL:
+                    res = new int[] { 618, 619, 620, 621, 622 };
+                    break;
+                case LoggedRaid.BT:
+                    res = new int[] { 601, 602, 603, 604, 605, 606, 607, 608, 609 };
+                    break;
+
+
+
+                case LoggedRaid.GRUUL_MAG:
+                    twoInOne.AddRange(GetEncountersForRaid(LoggedRaid.GRUUL));
+                    twoInOne.AddRange(GetEncountersForRaid(LoggedRaid.MAG));
+                    res = twoInOne.ToArray();
+                    break;
+
+                case LoggedRaid.SSC_TK:
+                    twoInOne.AddRange(GetEncountersForRaid(LoggedRaid.SSC));
+                    twoInOne.AddRange(GetEncountersForRaid(LoggedRaid.TK));
+                    res = twoInOne.ToArray();
+                    break;
+
+                case LoggedRaid.HYJAL_BT:
+                    twoInOne.AddRange(GetEncountersForRaid(LoggedRaid.HYJAL));
+                    twoInOne.AddRange(GetEncountersForRaid(LoggedRaid.BT));
+                    res = twoInOne.ToArray();
+                    break;
+
+                default:
+                    throw new NotImplementedException("WarcraftLoggsClient.GetEncountersForRaid(), LoggedRaid = '" + r.ToString() + "'");
+            }
+
+            return res;
         }
 
         private LoggedRaid ZoneToRaid(int zone, string title)
@@ -212,6 +555,14 @@ namespace GnomeParsingBot.WarcraftLogs
         {
             EU,
             US
+        }
+
+        public class GenerateSheetsResult
+        {
+            public string SpreadSheetCLA_SheetID { get; set; }
+            public string SpreadSheetRPB_SheetID { get; set; }
+            public string SpreadSheetCLA_URL { get; set; }
+            public string SpreadSheetRPB_URL { get; set; }
         }
     }
 }

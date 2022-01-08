@@ -1,22 +1,20 @@
 ﻿using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
-using GnomeParsingBot.WarcraftLogs;
 using PawDiscordBot;
 using PawDiscordBot.Commands;
-using PawDiscordBot.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static GnomeParsingBot.ActivePost;
 
 namespace GnomeParsingBot.Commands
 {
-    public class AddRaidLogCommand : ParameterCommand
+    public class FindPostCommand : ParameterCommand
     {
-        public AddRaidLogCommand(string prefix) : base(new CommandSettings(prefix + "add", 2)) { }
+        public FindPostCommand(string prefix) : base(new CommandSettings(prefix + "find", 1)) { }
 
         public override bool HandleCommand(PawDiscordBotClient client, SocketUserMessage msg, string[] levels, string[] parameters)
         {
@@ -32,18 +30,21 @@ namespace GnomeParsingBot.Commands
             {
                 SocketGuildUser socketUser = (SocketGuildUser)msg.Author;
 
-                if (ActivePost.PostID.HasValue)
+                string inputSearchLength = parameters[0];
+                int msgToSearch = 20;
+
+                if (int.TryParse(inputSearchLength, out int newCount))
+                    msgToSearch = newCount;
+
+                Task.Factory.StartNew(() =>
                 {
-                    LoggedRaid r = ActivePost.GetRaidFromLine(parameters[0]);
-                    string logID = parameters[1];
+                    bool didFindAndSet = ActivePost.FindAndSetPostID(client, msg.Channel, msgToSearch).Result;
 
-                    ActivePost.AddLog(r, new LoggedRaidData(r, logID));
-                    ActivePost.RewriteMessage("", client, msg.Channel);
+                    if (!didFindAndSet)
+                        msg.Channel.SendMessageAsync("Couldn't find a post :(");
+                });
 
-                    handled = true;
-                }
-                else
-                    throw new PawDiscordBotException(ExceptionType.WARN_USER, "Please create a new post first!");
+                handled = true;
             }
 
             msg.DeleteAsync();

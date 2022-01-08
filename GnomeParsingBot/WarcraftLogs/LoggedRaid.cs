@@ -11,17 +11,17 @@ namespace GnomeParsingBot.WarcraftLogs
         NONE = 0,
 
         KARAZHAN = 12,
-        GRUUL = 11,
+        GRUUL_MAG = 11,
         MAG = 10,
-        GRUUL_MAG = 9,
+        GRUUL = 9,
 
-        SSC = 8,
+        SSC_TK = 8,
         TK = 7,
-        SSC_TK = 6,
+        SSC = 6,
 
-        HYJAL = 5,
+        HYJAL_BT = 5,
         BT = 4,
-        HYJAL_BT = 3,
+        HYJAL = 3,
 
         ZA = 2,
         SWP = 1

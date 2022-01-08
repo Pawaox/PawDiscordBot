@@ -1,18 +1,14 @@
 ﻿using Discord.WebSocket;
 using GnomeParsingBot;
+using GnomeParsingBot.GoogleAPI;
 using GnomeParsingBot.WarcraftLogs;
 
 try
 {
     StaticData.Initialize("Gnome Lovers", "Gehennas", WarcraftLogsClient.Region.EU);
 
-    using (WarcraftLogsClient wcl = new WarcraftLogsClient())
-    {
-        wcl.Test();
-    }
-
-    string botKeyPath = "C:/discordclient.txt";
-    string botLogPath = "C:/discordBotLog.txt";
+    string botKeyPath = "C:/discordclient_gnomeParsing.txt";
+    string botLogPath = "C:/Log_GnomeParsing.txt";
     bool useWS4NetProvider = true;
 
     string botKey = "";
@@ -21,15 +17,17 @@ try
     else
         throw new Exception("Couldn't find client key at " + botKeyPath);
 
-    DiscordSocketConfig dsCfg = new DiscordSocketConfig();
+    DiscordSocketConfig discSocketConfig = new DiscordSocketConfig();
+    discSocketConfig.AlwaysDownloadUsers = true;
+
     if (useWS4NetProvider)
-        dsCfg.WebSocketProvider = Discord.Net.Providers.WS4Net.WS4NetProvider.Instance;
+        discSocketConfig.WebSocketProvider = Discord.Net.Providers.WS4Net.WS4NetProvider.Instance;
 
     GnomeParsingBotClient client = new GnomeParsingBotClient(botKey);
     client.Logger = new GnomeParsingBotLogger(botLogPath, true);
 
-    client.Start(dsCfg);
-
+    client.Start(discSocketConfig);
+    
     #region Console Input
     ConsoleColor oldColor = Console.ForegroundColor;
     bool doRun = true;
@@ -61,7 +59,7 @@ try
 catch (Exception exc)
 {
     Console.WriteLine(exc.ToString());
-    Console.Write("Finished, Press <ENTER> to lose");
+    Console.Write("Finished, Press <ENTER> to close");
     Console.ReadLine();
 }
 

@@ -27,6 +27,9 @@ namespace PawDiscordBot
         public bool CanReplyWithExceptions { get; set; }
         public bool CanReactToBotMessages { get; set; }
         public bool ReactOnlyIfMentionedFirst { get; set; }
+
+        public HashSet<ulong> UserWhiteList { get; set; }
+
         /// <summary>
         /// Item1: Guild ID
         /// Item2: Channel ID
@@ -69,6 +72,8 @@ namespace PawDiscordBot
 
             Commands = new CommandStorage(this);
             Modules = new ModuleStorage(this, commandServ);
+
+            UserWhiteList = new HashSet<ulong>();
         }
 
         public void ReplyToError(SocketUserMessage message, string reply)
@@ -188,6 +193,9 @@ namespace PawDiscordBot
                         if (!CanReactToBotMessages && message.Author.IsBot)
                             return;
 
+                        if (UserWhiteList != null && UserWhiteList.Count > 0 && !UserWhiteList.Contains(message.Author.Id))
+                            return;
+                        
                         int prefixPosition = 0;
                         message.HasMentionPrefix(Client.CurrentUser, ref prefixPosition);
 

@@ -9,7 +9,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CasualBot", "CasualBot\Casu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordModules", "DiscordModules\DiscordModules.csproj", "{E6CB6702-8F2F-4C4C-8ED1-8815CD8DBCA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GnomeParsingBot", "GnomeParsingBot\GnomeParsingBot.csproj", "{8DB7CA99-4189-44CA-9452-09565179FD5C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GnomeParsingBot", "GnomeParsingBot\GnomeParsingBot.csproj", "{8DB7CA99-4189-44CA-9452-09565179FD5C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4AAC8BD8-432A-41DD-9432-58734A07F6BB}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

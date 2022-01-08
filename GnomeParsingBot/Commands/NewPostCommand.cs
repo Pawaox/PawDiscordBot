@@ -5,15 +5,16 @@ using PawDiscordBot;
 using PawDiscordBot.Commands;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace GnomeParsingBot.Commands
 {
-    public class CreatePostCommand : ParameterCommand
+    public class NewPostCommand : ParameterCommand
     {
-        public CreatePostCommand(string prefix) : base(new CommandSettings(prefix + "post", 2)) { }
+        public NewPostCommand(string prefix) : base(new CommandSettings(prefix + "new", 2)) { }
 
         public override bool HandleCommand(PawDiscordBotClient client, SocketUserMessage msg, string[] levels, string[] parameters)
         {
@@ -38,8 +39,8 @@ namespace GnomeParsingBot.Commands
                 {
                     if (DateTime.TryParse(dateInput, out autoDate))
                     {
-                        dateText = autoDate.ToString("MMMM dd, yyyy");
-
+                        dateText = autoDate.ToString("D", CultureInfo.GetCultureInfo("en-US"));
+                        //dateText = autoDate.ToString("MMMM dd, yyyy");
                     }
                 }
                 else
@@ -49,7 +50,7 @@ namespace GnomeParsingBot.Commands
                         case "":
                         case "NOW":
                         case "TODAY":
-                            dateText = DateTime.Now.ToString("MMMM dd, yyyy");
+                            dateText = DateTime.Now.ToString("D", CultureInfo.GetCultureInfo("en-US"));
                             break;
                     }
                 }
@@ -64,8 +65,8 @@ namespace GnomeParsingBot.Commands
 
                 if (auto)
                 {
-                    ActivePost.FetchFromWarcraftlogs(reply.Id, line, autoDate);
-                    ActivePost.RewriteMessage(client, msg.Channel);
+                    ActivePost.FetchFreshDataFromWarcraftlogs(reply.Id, line, autoDate);
+                    ActivePost.RewriteMessage("", client, msg.Channel);
                 }
                 else
                 {
