@@ -149,7 +149,6 @@ namespace GnomeParsingBot.GoogleAPI
             return isDone;
         }
 
-
         public static CallScriptFunctionWithReturnResult<T> CallScriptFunctionWithReturn<T>(ScriptService service, string function, string scriptID, Func<CallScriptFunctionWithReturnResult<T>> isDoneCheck)
         {
             CallScriptFunctionWithReturnResult<T> result = new CallScriptFunctionWithReturnResult<T>();

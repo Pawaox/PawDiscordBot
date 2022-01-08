@@ -343,10 +343,8 @@ namespace GnomeParsingBot
                 }
             }
 
-            //var debug = ActivePost.RaidLogs;
             return done;
         }
-
 
         public static LoggedRaid GetRaidFromLine(string line)
         {
