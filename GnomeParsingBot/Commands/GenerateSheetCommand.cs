@@ -31,8 +31,6 @@ namespace GnomeParsingBot.Commands
 
             if (msg.Author is SocketGuildUser)
             {
-                //SocketGuildUser socketUser = (SocketGuildUser)msg.Author;
-
                 if (ActivePost.PostID.HasValue)
                 {
                     msg.DeleteAsync();
@@ -62,12 +60,6 @@ namespace GnomeParsingBot.Commands
                                 var googleCredentials = Google.Apis.Auth.OAuth2.GoogleWebAuthorizationBroker.AuthorizeAsync(Google.Apis.Auth.OAuth2.GoogleClientSecrets.FromFile(StaticData.PATH_GOOGLECRED_OAUTH).Secrets,
                                     googleScope, "user", CancellationToken.None, new Google.Apis.Util.Store.FileDataStore(StaticData.PATH_FILEDATASTORE_CREDENTIALS)).Result;
 
-                                /*
-                                raidData.CLA_URL = "https://docs.google.com/spreadsheets/d/1vYqTvOPdRYVubiBBmuRAYCK4JJX7-K-v8rAAeXyGhgY/";
-                                raidData.RPB_URL = "https://docs.google.com/spreadsheets/d/1uN2TyqyR6PwxiS8wjilAJWiibNhPKHIzCgyVaPNtdyY/";
-                                raidData.CLA_SheetID = "1vYqTvOPdRYVubiBBmuRAYCK4JJX7-K-v8rAAeXyGhgY";
-                                raidData.RPB_SheetID = "1uN2TyqyR6PwxiS8wjilAJWiibNhPKHIzCgyVaPNtdyY";
-                                */
                                 using (WarcraftLogsClient wcl = new WarcraftLogsClient(null))
                                 {
                                     WarcraftLogsClient.GenerateSheetsResult generatedSheets = wcl.GenerateSheets(googleCredentials, raidData.LogID);

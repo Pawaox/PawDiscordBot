@@ -40,7 +40,6 @@ namespace GnomeParsingBot.Commands
                     if (DateTime.TryParse(dateInput, out autoDate))
                     {
                         dateText = autoDate.ToString("D", CultureInfo.GetCultureInfo("en-US"));
-                        //dateText = autoDate.ToString("MMMM dd, yyyy");
                     }
                 }
                 else

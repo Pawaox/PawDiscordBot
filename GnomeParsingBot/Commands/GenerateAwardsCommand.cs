@@ -186,15 +186,15 @@ namespace GnomeParsingBot.Commands
                             if (giveAwards)
                             {
                                 GiveAwards(client, RoleAward.AwardType.DEATHS, idiots);
-                                GiveAwards(client, RoleAward.AwardType.DEATHS, pumpers.BossDamage);
-                                GiveAwards(client, RoleAward.AwardType.DEATHS, pumpers.TrashDamage);
-                                GiveAwards(client, RoleAward.AwardType.DEATHS, saviours);
-                                GiveAwards(client, RoleAward.AwardType.DEATHS, consumers);
-                                GiveAwards(client, RoleAward.AwardType.DEATHS, engineers);
-                                GiveAwards(client, RoleAward.AwardType.DEATHS, drumScore);
-                                GiveAwards(client, RoleAward.AwardType.DEATHS, farmers);
-                                GiveAwards(client, RoleAward.AwardType.DEATHS, dmgTaken.MostTaken);
-                                GiveAwards(client, RoleAward.AwardType.DEATHS, dmgTaken.LeastTaken);
+                                GiveAwards(client, RoleAward.AwardType.BOSSDAMAGE, pumpers.BossDamage);
+                                GiveAwards(client, RoleAward.AwardType.TRASHDAMAGE, pumpers.TrashDamage);
+                                GiveAwards(client, RoleAward.AwardType.HEALING, saviours);
+                                GiveAwards(client, RoleAward.AwardType.CONSUMES, consumers);
+                                GiveAwards(client, RoleAward.AwardType.ENGINEERING, engineers);
+                                GiveAwards(client, RoleAward.AwardType.DRUMSCORE, drumScore);
+                                GiveAwards(client, RoleAward.AwardType.CHICKEN, farmers);
+                                GiveAwards(client, RoleAward.AwardType.AVOIDABLEDAMAGETAKEN_MOST, dmgTaken.MostTaken);
+                                GiveAwards(client, RoleAward.AwardType.AVOIDABLEDAMAGETAKEN_LEAST, dmgTaken.LeastTaken);
                             }
                         }
                         catch (Exception exc)

@@ -20,13 +20,8 @@ namespace GnomeParsingBot.GoogleAPI
             SpreadsheetsResource.ValuesResource.GetRequest getRequest = service.Spreadsheets.Values.Get(sheetID, range);
             ValueRange valueRange = getRequest.Execute();
 
-            if (valueRange?.Values != null)
-            {
-                if (valueRange.Values.Count > 0)
-                {
-                    result = valueRange.Values[0]?[0]?.ToString() ?? "";
-                }
-            }
+            if (valueRange?.Values != null && valueRange.Values.Count > 0)
+                result = valueRange.Values[0]?[0]?.ToString() ?? "";
 
             return result;
         }
@@ -61,13 +56,8 @@ namespace GnomeParsingBot.GoogleAPI
             SpreadsheetsResource.ValuesResource.GetRequest getRequest = service.Spreadsheets.Values.Get(sheetID, range);
             ValueRange valueRange = getRequest.Execute();
 
-            if (valueRange?.Values != null)
-            {
-                if (valueRange.Values.Count > 0)
-                {
-                    lst = valueRange.Values;
-                }
-            }
+            if (valueRange?.Values != null && valueRange.Values.Count > 0)
+                lst = valueRange.Values;
 
             return lst;
         }
