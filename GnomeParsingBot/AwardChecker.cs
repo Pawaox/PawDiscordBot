@@ -153,6 +153,45 @@ namespace GnomeParsingBot
             return result;
         }
 
+        public static List<Tuple<string, long>> GetHealerPacifism(params string[] logIDs)
+        {
+            Dictionary<string, long> friendlyFire = new Dictionary<string, long>();
+
+            HashSet<string> healers = new HashSet<string>();
+            foreach (var charRole in StaticData.CharactersToRoles)
+            {
+                if ("Healer".Equals(charRole.Value.Item1) || "Healer".Equals(charRole.Value.Item2))
+                {
+                    healers.Add(charRole.Key);
+                }
+            }
+
+            using (WarcraftLogsClient wcl = new WarcraftLogsClient(StaticData.PATH_KEY_AWARDS))
+            {
+                foreach (string logID in logIDs)
+                {
+                    var logPacifism = wcl.GetHealerPacifism(logID, healers.ToArray());
+
+                    var leastMuderous = GetSmallestValue(logPacifism.Item2);
+
+                    //Incase some of the healers killed people, loop aagain and only take those with least teamkills
+                    foreach (var pairFriendlyFire in leastMuderous)
+                    {
+                        if (logPacifism.Item1.ContainsKey(pairFriendlyFire.Item1))
+                        {
+                            long ffDam = logPacifism.Item1[pairFriendlyFire.Item1];
+
+                            if (!friendlyFire.ContainsKey(pairFriendlyFire.Item1))
+                                friendlyFire.Add(pairFriendlyFire.Item1, ffDam);
+                            else
+                                friendlyFire[pairFriendlyFire.Item1] += ffDam;
+                        }
+                    }
+                }
+            }
+
+            return GetSmallestValue(friendlyFire);
+        }
 
         public static List<Tuple<string, long>> GetMostHealingDone(params string[] logIDs)
         {
@@ -165,6 +204,7 @@ namespace GnomeParsingBot
                     var logHeals = wcl.GetHealingDone(logID);
                     foreach (var d in logHeals)
                     {
+
                         if (!mostHealing.ContainsKey(d.Key))
                             mostHealing.Add(d.Key, d.Value);
                         else
@@ -297,16 +337,16 @@ namespace GnomeParsingBot
         {
             List<Tuple<string, long>> result = new List<Tuple<string, long>>();
 
-            long currentMax = long.MaxValue;
+            long currentMin = long.MaxValue;
             foreach (var pair in data)
             {
-                if (pair.Value > currentMax)
+                if (pair.Value < currentMin)
                 {
                     result.Clear();
                     result.Add(new Tuple<string, long>(pair.Key, pair.Value));
-                    currentMax = pair.Value;
+                    currentMin = pair.Value;
                 }
-                else if (pair.Value == currentMax)
+                else if (pair.Value == currentMin)
                 {
                     result.Add(new Tuple<string, long>(pair.Key, pair.Value));
                 }
@@ -342,16 +382,16 @@ namespace GnomeParsingBot
         {
             List<Tuple<string, int>> result = new List<Tuple<string, int>>();
 
-            int currentMax = int.MaxValue;
+            int currentMin = int.MaxValue;
             foreach (var pair in data)
             {
-                if (pair.Value > currentMax)
+                if (pair.Value < currentMin)
                 {
                     result.Clear();
                     result.Add(new Tuple<string, int>(pair.Key, pair.Value));
-                    currentMax = pair.Value;
+                    currentMin = pair.Value;
                 }
-                else if (pair.Value == currentMax)
+                else if (pair.Value == currentMin)
                 {
                     result.Add(new Tuple<string, int>(pair.Key, pair.Value));
                 }
@@ -387,16 +427,16 @@ namespace GnomeParsingBot
         {
             List<Tuple<string, float>> result = new List<Tuple<string, float>>();
 
-            float currentMax = float.MaxValue;
+            float currentMin = float.MaxValue;
             foreach (var pair in data)
             {
-                if (pair.Value > currentMax)
+                if (pair.Value < currentMin)
                 {
                     result.Clear();
                     result.Add(new Tuple<string, float>(pair.Key, pair.Value));
-                    currentMax = pair.Value;
+                    currentMin = pair.Value;
                 }
-                else if (pair.Value == currentMax)
+                else if (pair.Value == currentMin)
                 {
                     result.Add(new Tuple<string, float>(pair.Key, pair.Value));
                 }

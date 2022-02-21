@@ -52,7 +52,10 @@ namespace GnomeParsingBot.WarcraftLogs
         public GenerateSheetsResult GenerateSheets(UserCredential credentials, string logID)
         {
             GenerateSheetsResult result = new GenerateSheetsResult();
-                        
+            /*
+            result.SpreadSheetCLA_URL = "https://docs.google.com/spreadsheets/d/1AEaJi0cI8ZRmb2HdU08rTn5OK5M4-rdamveUNiR8Vas/edit?usp=drivesdk";
+            result.SpreadSheetRPB_URL = "https://docs.google.com/spreadsheets/d/1nhWKDBbLQXZgefL1tQwn_QSUVld2rrFU7OY67viwpKQ/edit?usp=drivesdk";
+            */
             CombatLogAnalytics cla = new CombatLogAnalytics(credentials);
             cla.PrepareSheet(_apiKey, logID);
             bool populate = cla.PopulateDataSheets();
@@ -67,7 +70,7 @@ namespace GnomeParsingBot.WarcraftLogs
             rpb.GenerateSheetData();
             rpb.FixRoles();
             result.SpreadSheetRPB_URL = rpb.ExportSheetData();
-
+            
             //Clean up URL and extract sheetID into own property
 
             int index = result.SpreadSheetCLA_URL.LastIndexOf('/');
@@ -149,22 +152,35 @@ namespace GnomeParsingBot.WarcraftLogs
             if (string.IsNullOrEmpty(logID))
                 throw new ArgumentNullException("logID");
 
-            string path = _baseUrl + $"v1/report/tables/deaths/{logID}?start={0}&end={99999999}&api_key={_apiKey}";
-            HttpResponseMessage msg = _client.GetAsync(path).Result;
-
-            if (msg != null && msg.IsSuccessStatusCode)
+            long timestamp = 0;
+            string path = "";
+            
+            while (string.IsNullOrEmpty(path) || timestamp > 0)
             {
-                DeathsDTO deaths = JsonConvert.DeserializeObject<DeathsDTO>(msg.Content.ReadAsStringAsync().Result);
+                path = _baseUrl + $"v1/report/tables/deaths/{logID}?start={timestamp}&end={99999999}&api_key={_apiKey}";
+                HttpResponseMessage msg = _client.GetAsync(path).Result;
 
-                if (deaths != null)
+                if (msg != null && msg.IsSuccessStatusCode)
                 {
-                    foreach (DeathsDTO.Entry death in deaths.entries)
+                    DeathsDTO deaths = JsonConvert.DeserializeObject<DeathsDTO>(msg.Content.ReadAsStringAsync().Result);
+
+                    if (deaths != null && deaths.entries.Length >= 0)
                     {
-                        if (!deathCount.ContainsKey(death.name))
-                            deathCount.Add(death.name, 1);
+                        foreach (DeathsDTO.Entry death in deaths.entries)
+                        {
+                            if (!deathCount.ContainsKey(death.name))
+                                deathCount.Add(death.name, 1);
+                            else
+                                deathCount[death.name] += 1;
+                        }
+
+                        if (deaths.entries.Length > 200)
+                            timestamp = deaths.entries[deaths.entries.Length - 1].timestamp + 1;
                         else
-                            deathCount[death.name] += 1;
+                            timestamp = -1;
                     }
+                    else
+                        timestamp = -1;
                 }
             }
 
@@ -258,11 +274,11 @@ namespace GnomeParsingBot.WarcraftLogs
 
             if (msg != null && msg.IsSuccessStatusCode)
             {
-                HealingDoneDTO heals = JsonConvert.DeserializeObject<HealingDoneDTO>(msg.Content.ReadAsStringAsync().Result);
+                HealingDoneTableDTO heals = JsonConvert.DeserializeObject<HealingDoneTableDTO>(msg.Content.ReadAsStringAsync().Result);
 
                 if (heals != null)
                 {
-                    foreach (HealingDoneDTO.Entry entry in heals.entries)
+                    foreach (HealingDoneTableDTO.Entry entry in heals.entries)
                     {
                         if (!healing.ContainsKey(entry.name))
                             healing.Add(entry.name, entry.total);
@@ -290,11 +306,11 @@ namespace GnomeParsingBot.WarcraftLogs
             #region Map Chickens to players
             if (msg != null && msg.IsSuccessStatusCode)
             {
-                DamageDoneTableDTO heals = JsonConvert.DeserializeObject<DamageDoneTableDTO>(msg.Content.ReadAsStringAsync().Result);
+                DamageDoneTableDTO dmg = JsonConvert.DeserializeObject<DamageDoneTableDTO>(msg.Content.ReadAsStringAsync().Result);
 
-                if (heals != null)
+                if (dmg != null)
                 {
-                    foreach (DamageDoneTableDTO.Entry entry in heals.entries)
+                    foreach (DamageDoneTableDTO.Entry entry in dmg.entries)
                     {
                         if (entry.pets != null && entry.pets.Length > 0)
                         {
@@ -344,6 +360,95 @@ namespace GnomeParsingBot.WarcraftLogs
             return chickenProcs;
         }
 
+        public Tuple<Dictionary<string, long>, Dictionary<string, long>> GetHealerPacifism(string logID, params string[] healerNames)
+        {
+            Dictionary<string, long> hatredSpread = new Dictionary<string, long>();
+            Dictionary<string, long> murderers = new Dictionary<string, long>();
+
+            Dictionary<int, string> healerIdsToCharacter = new Dictionary<int, string>();
+
+            if (string.IsNullOrEmpty(logID))
+                throw new ArgumentNullException("logID");
+
+            string path = _baseUrl + $"v1/report/tables/healing/{logID}?start={0}&end={99999999}&api_key={_apiKey}";
+            HttpResponseMessage msg = _client.GetAsync(path).Result;
+
+            #region Map Chickens to players
+            if (msg != null && msg.IsSuccessStatusCode)
+            {
+                HealingDoneTableDTO heals = JsonConvert.DeserializeObject<HealingDoneTableDTO>(msg.Content.ReadAsStringAsync().Result);
+                
+                if (heals != null)
+                {
+                    foreach (HealingDoneTableDTO.Entry entry in heals.entries)
+                    {
+                        if (healerNames.Contains(entry?.name ?? ""))
+                        {
+                            if (!healerIdsToCharacter.ContainsKey(entry.id))
+                                healerIdsToCharacter.Add(entry.id, entry.name);
+                            else
+                                healerIdsToCharacter[entry.id] = entry.name;
+                        }
+                    }
+                }
+            }
+            #endregion
+
+            foreach (var ch in healerIdsToCharacter.Values)
+            {
+                if (!murderers.ContainsKey(ch))
+                    murderers.Add(ch, 0);
+                if (!hatredSpread.ContainsKey(ch))
+                    hatredSpread.Add(ch, 0);
+            }
+
+            long startValue = 1;
+            int apiCallCount = 0;
+            while (startValue > 0)
+            {
+                path = _baseUrl + $"v1/report/events/damage-taken/{logID}?start={startValue}&end={99999999}&api_key={_apiKey}&by=source";
+                msg = _client.GetAsync(path).Result;
+
+                if (msg != null && msg.IsSuccessStatusCode)
+                {
+                    DamageTakenEventsDTO events = JsonConvert.DeserializeObject<DamageTakenEventsDTO>(msg.Content.ReadAsStringAsync().Result);
+                    apiCallCount++;
+
+                    if (events?.events != null)
+                    {
+                        startValue = events.nextPageTimestamp;
+
+                        foreach (DamageTakenEventsDTO.Event ev in events.events)
+                        {
+                            if (healerIdsToCharacter.ContainsKey(ev.sourceID) && ev.targetIsFriendly && ev.sourceIsFriendly)
+                            {
+                                string player = healerIdsToCharacter[ev.sourceID];
+
+                                if (ev.overkill > 0)
+                                {
+                                    if (!murderers.ContainsKey(player))
+                                        murderers.Add(player, 1);
+                                    else
+                                        murderers[player] += 1;
+                                }
+
+                                if (!hatredSpread.ContainsKey(player))
+                                    hatredSpread.Add(player, ev.unmitigatedAmount > 0 ? ev.unmitigatedAmount : ev.amount > 0 ? ev.amount : 0);
+                                else
+                                    hatredSpread[player] += ev.unmitigatedAmount > 0 ? ev.unmitigatedAmount : ev.amount > 0 ? ev.amount : 0;
+                            }
+                        }
+                    }
+                    else
+                        break;
+                }
+                else
+                    break;
+            }
+
+            return new Tuple<Dictionary<string, long>, Dictionary<string, long>>(hatredSpread, murderers);
+        }
+
         public Dictionary<string, long> GetConsumableUse(string logID, GetConsumableUseRequest consumable)
         {
             Dictionary<string, long> uses = new Dictionary<string, long>();
@@ -363,11 +468,11 @@ namespace GnomeParsingBot.WarcraftLogs
             #region Map IDs to players
             if (msg != null && msg.IsSuccessStatusCode)
             {
-                DamageDoneTableDTO heals = JsonConvert.DeserializeObject<DamageDoneTableDTO>(msg.Content.ReadAsStringAsync().Result);
+                DamageDoneTableDTO dmgDoneTable = JsonConvert.DeserializeObject<DamageDoneTableDTO>(msg.Content.ReadAsStringAsync().Result);
 
-                if (heals != null)
+                if (dmgDoneTable != null)
                 {
-                    foreach (DamageDoneTableDTO.Entry entry in heals.entries)
+                    foreach (DamageDoneTableDTO.Entry entry in dmgDoneTable.entries)
                     {
                         if (!sourceIDToPlayer.ContainsKey(entry.id))
                             sourceIDToPlayer.Add(entry.id, entry.name);
@@ -378,32 +483,42 @@ namespace GnomeParsingBot.WarcraftLogs
             }
             #endregion
 
-            path = _baseUrl + $"v1/report/events/casts/{logID}?start={0}&end={99999999}&api_key={_apiKey}&abilityid={consumable.SpellID}";
-            msg = _client.GetAsync(path).Result;
-
-            if (msg != null && msg.IsSuccessStatusCode)
+            path = "";
+            long timestamp = 0;
+            while (string.IsNullOrEmpty(path) || timestamp > 0)
             {
-                CastEventsDTO casts = JsonConvert.DeserializeObject<CastEventsDTO>(msg.Content.ReadAsStringAsync().Result);
+                path = _baseUrl + $"v1/report/events/casts/{logID}?start={timestamp}&end={99999999}&api_key={_apiKey}&abilityid={consumable.SpellID}";
+                msg = _client.GetAsync(path).Result;
 
-                if (casts != null)
+                if (msg != null && msg.IsSuccessStatusCode)
                 {
-                    foreach (CastEventsDTO.Event ev in casts.events)
-                    {
-                        if ("cast".Equals(ev.type))
-                        {
-                            if (ev.ability != null/* && consumable.Name.Equals(ev.ability.name)*/)
-                            {
-                                if (sourceIDToPlayer.ContainsKey(ev.sourceID))
-                                {
-                                    string playerName = sourceIDToPlayer[ev.sourceID];
+                    CastEventsDTO casts = JsonConvert.DeserializeObject<CastEventsDTO>(msg.Content.ReadAsStringAsync().Result);
 
-                                    if (!uses.ContainsKey(playerName))
-                                        uses.Add(playerName, 1);
-                                    else
-                                        uses[playerName] += 1;
+                    if (casts != null)
+                    {
+                        foreach (CastEventsDTO.Event ev in casts.events)
+                        {
+                            if ("cast".Equals(ev.type))
+                            {
+                                if (ev.ability != null/* && consumable.Name.Equals(ev.ability.name)*/)
+                                {
+                                    if (sourceIDToPlayer.ContainsKey(ev.sourceID))
+                                    {
+                                        string playerName = sourceIDToPlayer[ev.sourceID];
+
+                                        if (!uses.ContainsKey(playerName))
+                                            uses.Add(playerName, 1);
+                                        else
+                                            uses[playerName] += 1;
+                                    }
                                 }
                             }
                         }
+
+                        if (casts.events.Length > 0)
+                            timestamp = casts.events[casts.events.Length - 1].timestamp + 1;
+                        else
+                            timestamp = -1;
                     }
                 }
             }
@@ -517,7 +632,7 @@ namespace GnomeParsingBot.WarcraftLogs
                     break;
                 case 1011: // BT / Hyjal
                     raid1 = titleToUse.Contains("HYJ");
-                    raid2 = titleToUse.Contains("BT");
+                    raid2 = titleToUse.Contains("BT") || titleToUse.Contains("BLACK") || titleToUse.Contains("TEMPLE");
 
                     if (raid1 && raid2)
                         r = LoggedRaid.HYJAL_BT;

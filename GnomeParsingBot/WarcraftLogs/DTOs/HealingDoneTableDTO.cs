@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GnomeParsingBot.WarcraftLogs.DTOs
 {
-    public class HealingDoneDTO
+    public class HealingDoneTableDTO
     {
         public Entry[] entries { get; set; }
         public int totalTime { get; set; }

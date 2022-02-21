@@ -15,13 +15,16 @@ namespace GnomeParsingBot.WarcraftLogs
             DEATHS,
             BOSSDAMAGE,
             TRASHDAMAGE,
-            HEALING,
             AVOIDABLEDAMAGETAKEN_LEAST,
             AVOIDABLEDAMAGETAKEN_MOST,
             CONSUMES,
             ENGINEERING,
             DRUMSCORE,
-            CHICKEN
+            CHICKEN,
+
+
+            HEALING,
+            HEALER_PACIFISM
         }
     }
 }

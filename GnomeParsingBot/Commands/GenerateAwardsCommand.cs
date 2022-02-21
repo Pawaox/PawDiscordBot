@@ -15,6 +15,9 @@ using static GnomeParsingBot.ActivePost;
 
 namespace GnomeParsingBot.Commands
 {
+    /// <summary>
+    /// Args: RaidLog, Channel, BoolGrantRoles
+    /// </summary>
     public class GenerateAwardsCommand : ParameterCommand
     {
         public GenerateAwardsCommand(string prefix) : base(new CommandSettings(prefix + "generateAwards", 3)) { }
@@ -135,11 +138,22 @@ namespace GnomeParsingBot.Commands
 
                             var pumpers = AwardChecker.GetMostDamageDone(rLogs.ToArray());
                             var saviours = AwardChecker.GetMostHealingDone(individualLogIDs);
+                            //var pacifists = AwardChecker.GetHealerPacifism(individualLogIDs);
 
                             var engineers = AwardChecker.GetConsumableScore_EngineeringOnly(individualLogIDs);
                             var consumers = AwardChecker.GetConsumableScore_NoEngineering(individualLogIDs);
                             var farmers = AwardChecker.GetMostChickenProcs(individualLogIDs);
+                            /*
+                            var drumScore = new List<Tuple<string, int>>();
+                            drumScore.Add(new Tuple<string, int>("Vegitomato", 1));
 
+                            var dmgTaken = new AwardChecker.GetAvoidableDamageTakenResult();
+                            dmgTaken.MostTaken = new List<Tuple<string, int>>();
+                            dmgTaken.LeastTaken = new List<Tuple<string, int>>();
+                            dmgTaken.MostTaken.Add(new Tuple<string, int>("Dervz", 1));
+                            dmgTaken.LeastTaken.Add(new Tuple<string, int>("Feightw", 0));
+                            */
+                            
                             var drumScore = AwardChecker.GetBestDrumscore(googleCredentials, claSheets.ToArray());
                             var dmgTaken = AwardChecker.GetAvoidableDamageTaken(googleCredentials, rpbSheets.ToArray());
 
@@ -155,13 +169,18 @@ namespace GnomeParsingBot.Commands
                             sb.Append("#1 Trash Damage: \t\t\t\t\t\t");
                             GenerateAwardUserText(pumpers.TrashDamage, ref sb);
 
+                            
                             sb.Append("#1 Healing Done: \t\t\t\t\t\t  ");
                             GenerateAwardUserText(saviours, ref sb);
-
+                            
+                            /*
+                            sb.Append("#1 Healer Pacifist: \t\t\t\t\t\t  ");
+                            GenerateAwardUserText(pacifists, ref sb);
+                            */
                             sb.Append("#1 Consumes Used: \t\t\t\t     ");
                             GenerateAwardUserText(consumers, ref sb);
 
-                            sb.Append("#1 Engineering Used: \t\t\t\t   ");
+                            sb.Append("#1 Chaos Caused w/ Engi:  \t\t");
                             GenerateAwardUserText(engineers, ref sb);
 
                             sb.Append("#1 Drumscore: \t\t\t\t\t\t\t  ");
@@ -181,7 +200,7 @@ namespace GnomeParsingBot.Commands
                             if (outputChannel == null)
                                 outputChannel = msg.Channel;
 
-                            outputChannel.SendMessageAsync(sb.ToString());
+                            var tskNewMsg = outputChannel.SendMessageAsync(sb.ToString());
                             
                             if (giveAwards)
                             {
@@ -189,6 +208,7 @@ namespace GnomeParsingBot.Commands
                                 GiveAwards(client, RoleAward.AwardType.BOSSDAMAGE, pumpers.BossDamage);
                                 GiveAwards(client, RoleAward.AwardType.TRASHDAMAGE, pumpers.TrashDamage);
                                 GiveAwards(client, RoleAward.AwardType.HEALING, saviours);
+                                //GiveAwards(client, RoleAward.AwardType.HEALER_PACIFISM, pacifists);
                                 GiveAwards(client, RoleAward.AwardType.CONSUMES, consumers);
                                 GiveAwards(client, RoleAward.AwardType.ENGINEERING, engineers);
                                 GiveAwards(client, RoleAward.AwardType.DRUMSCORE, drumScore);
@@ -196,6 +216,23 @@ namespace GnomeParsingBot.Commands
                                 GiveAwards(client, RoleAward.AwardType.AVOIDABLEDAMAGETAKEN_MOST, dmgTaken.MostTaken);
                                 GiveAwards(client, RoleAward.AwardType.AVOIDABLEDAMAGETAKEN_LEAST, dmgTaken.LeastTaken);
                             }
+
+                            var newMsg = tskNewMsg.Result;
+
+                            Task.Factory.StartNew(() =>
+                            {
+                                Thread.Sleep(10000);
+                                try
+                                {
+                                    ActivePost.RewriteMessage(sb.ToString(), client, msg.Channel);
+                                    newMsg.DeleteAsync();
+                                }
+                                catch(Exception exc)
+                                {
+                                    msg.Channel.SendMessageAsync(exc.ToString());
+                                }
+                            });
+
                         }
                         catch (Exception exc)
                         {

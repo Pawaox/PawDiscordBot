@@ -16,8 +16,8 @@ namespace GnomeParsingBot.GoogleAPI
 {
     public class RolePerformanceBreakdown : RPBCLABase
     {
-        static string _templateSpreadsheetScriptID = "1Q-lCdLA0ToI6UyoCUvBy4o4SGRzGVW1w_K5WbsfQfoe6rJVlNSNbVgQ0";
-        static string _templateSpreadsheetID = "18TJJyDrPaG_iI3rvTd3vU8_iKL-NdmH3ME7aRv1-hlk";
+        static string _templateSpreadsheetScriptID = "1OA_nfhSEq6wf_0AsOdW6o0_utNLITQTbY1fnwgisC9298SLTJ8pWJGrJ";
+        static string _templateSpreadsheetID = "1QSvDDXLt0COIz-rf4aUhimnB2H56pqOmGB2xkMGeWQw";
         static string _rangeKey = "Instructions!E9";
         static string _rangeLog = "Instructions!E11";
         static string _rangeGenerateCompleteText = "All!E3";
@@ -166,7 +166,7 @@ namespace GnomeParsingBot.GoogleAPI
                             toSetRoles2.Add(charRoles.Item2);
                     }
                     else
-                        throw new RolePerformanceBreakdownException($"Couldn't find '{playerName}' in roles dictionary!");
+                        throw new RolePerformanceBreakdownException($"Couldn't find '{playerName}' in roles dictionary! Please add them to StaticData");
 
                     role1Index++;
                     role2Index++;

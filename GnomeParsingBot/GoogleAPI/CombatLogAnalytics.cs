@@ -16,8 +16,8 @@ namespace GnomeParsingBot.GoogleAPI
 {
     public class CombatLogAnalytics : RPBCLABase
     {
-        static string _templateSpreadsheetScriptID = "1OaebS9u7R33w31rQuu7MokIvGZjvpYhFSH1juNv-NY8-LwU7TJEIcbPL";
-        static string _templateSpreadsheetID = "19VELHXy6QgZubJTMlNHbECXUBGsbDeBhzOzMudgFS_s";
+        static string _templateSpreadsheetScriptID = "1tmOInp9n2xhxJzyVS5onf49_6ReEd14whkFglaZlCKP9j_v-S7e51f76";
+        static string _templateSpreadsheetID = "1IkTqdvhqPiT3XltAe5tjzh_IppsLRzB3JUWWcoJgj64";
         static string _rangeKey = "Instructions!E9";
         static string _rangeLog = "Instructions!E11";
         static string _rangeGenerateCompleteText = "Instructions!B27";
@@ -27,8 +27,13 @@ namespace GnomeParsingBot.GoogleAPI
         static string _rangeCompleted_GearList = "gear listing!D1";
         static string _rangeCompleted_Buffs = "buff consumables!C1";
         static string _rangeCompleted_Drums = "drums!F1";
+        static string _rangeCompleted_shadowRes = "shadow resi (Mother)!G1";
+        /*
         static string _rangeCompleted_FightsSSC = "fightsSSC!I1";
         static string _rangeCompleted_FightsTK = "fightsTK!I1";
+        */
+        static string _rangeCompleted_FightsMH = "fightsMH!I1";
+        static string _rangeCompleted_FightsBT = "fightsBT!I1";
 
         public static string[] AvailableRoles = new string[] { "---", "Caster", "Healer", "Physical", "Tank" };
 
@@ -51,8 +56,12 @@ namespace GnomeParsingBot.GoogleAPI
                 SheetHelper.SetTextInRange(sheetService, _templateSpreadsheetID, _rangeCompleted_GearList, " ");
                 SheetHelper.SetTextInRange(sheetService, _templateSpreadsheetID, _rangeCompleted_Buffs, " ");
                 SheetHelper.SetTextInRange(sheetService, _templateSpreadsheetID, _rangeCompleted_Drums, " ");
-                SheetHelper.SetTextInRange(sheetService, _templateSpreadsheetID, _rangeCompleted_FightsSSC, " ");
-                SheetHelper.SetTextInRange(sheetService, _templateSpreadsheetID, _rangeCompleted_FightsTK, " ");
+                SheetHelper.SetTextInRange(sheetService, _templateSpreadsheetID, _rangeCompleted_shadowRes, " ");
+
+                /*SheetHelper.SetTextInRange(sheetService, _templateSpreadsheetID, _rangeCompleted_FightsSSC, " ");
+                SheetHelper.SetTextInRange(sheetService, _templateSpreadsheetID, _rangeCompleted_FightsTK, " ");*/
+                SheetHelper.SetTextInRange(sheetService, _templateSpreadsheetID, _rangeCompleted_FightsMH, " ");
+                SheetHelper.SetTextInRange(sheetService, _templateSpreadsheetID, _rangeCompleted_FightsBT, " ");
 
                 //Takes more code, looks uglier, but saves API calls
                 List<IList<object>> lst = new List<IList<object>>();
@@ -62,8 +71,8 @@ namespace GnomeParsingBot.GoogleAPI
                 lst[1].Add("yes"); //gear listing
                 lst[2].Add("yes"); //buffs
                 lst[3].Add("yes"); //drums
-                lst[4].Add("no"); //validate
-                lst[5].Add("no"); //shadow res
+                lst[4].Add("yes"); //validate
+                lst[5].Add("yes"); //shadow res
                 lst[6].Add("yes"); //fights
 
                 SheetHelper.SetRanges(sheetService, _templateSpreadsheetID, _rangeSelections, lst);
@@ -74,23 +83,25 @@ namespace GnomeParsingBot.GoogleAPI
         {
             var sInit = CreateServiceInitializer();
 
-            bool gearIssues = false, gearList = false, buffs = false, drums = false, fights = false;
+            bool gearIssues = false, gearList = false, buffs = false, drums = false, sRes = false, fights = false;
             using (ScriptService service = new ScriptService(sInit))
             {
                 var tsk1 = Task.Factory.StartNew(() => { return SheetHelper.CallScriptFunction(service, "populateGearIssues", _templateSpreadsheetScriptID, () => IsPopulateDone(_rangeCompleted_GearIssues)); });
                 var tsk2 = Task.Factory.StartNew(() => { return SheetHelper.CallScriptFunction(service, "populateGearBreakdown", _templateSpreadsheetScriptID, () => IsPopulateDone(_rangeCompleted_GearList)); });
                 var tsk3 = Task.Factory.StartNew(() => { return SheetHelper.CallScriptFunction(service, "populateBuffConsumables", _templateSpreadsheetScriptID, () => IsPopulateDone(_rangeCompleted_Buffs)); });
                 var tsk4 = Task.Factory.StartNew(() => { return SheetHelper.CallScriptFunction(service, "populateDrumsEffectiveness", _templateSpreadsheetScriptID, () => IsPopulateDone(_rangeCompleted_Drums)); });
-                var tsk5 = Task.Factory.StartNew(() => { return SheetHelper.CallScriptFunction(service, "populateAllFights", _templateSpreadsheetScriptID, () => IsPopulateDone(_rangeCompleted_FightsSSC) && IsPopulateDone(_rangeCompleted_FightsTK)); });
+                var tsk5 = Task.Factory.StartNew(() => { return SheetHelper.CallScriptFunction(service, "populateShadowResistance", _templateSpreadsheetScriptID, () => IsPopulateDone(_rangeCompleted_shadowRes)); });
+                var tsk6 = Task.Factory.StartNew(() => { return SheetHelper.CallScriptFunction(service, "populateAllFights", _templateSpreadsheetScriptID, () => IsPopulateDone(_rangeCompleted_FightsMH) && IsPopulateDone(_rangeCompleted_FightsBT)); });
                 
                 gearIssues = tsk1.Result;
                 gearList = tsk2.Result;
                 buffs = tsk3.Result;
                 drums = tsk4.Result;
-                fights = tsk5.Result;
+                sRes = tsk5.Result;
+                fights = tsk6.Result;
             }
 
-            return gearIssues && gearList && buffs && drums && fights;
+            return gearIssues && gearList && buffs && drums && sRes && fights;
         }
 
         public Dictionary<string, int> GetDrumScores(string spreadsheetID)

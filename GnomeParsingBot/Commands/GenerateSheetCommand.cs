@@ -61,12 +61,13 @@ namespace GnomeParsingBot.Commands
                                     googleScope, "user", CancellationToken.None, new Google.Apis.Util.Store.FileDataStore(StaticData.PATH_FILEDATASTORE_CREDENTIALS)).Result;
 
                                 using (WarcraftLogsClient wcl = new WarcraftLogsClient(null))
-                                {
+                                {                                    
                                     WarcraftLogsClient.GenerateSheetsResult generatedSheets = wcl.GenerateSheets(googleCredentials, raidData.LogID);
                                     raidData.CLA_URL = generatedSheets.SpreadSheetCLA_URL;
                                     raidData.RPB_URL = generatedSheets.SpreadSheetRPB_URL;
-                                    raidData.CLA_SheetID = generatedSheets.SpreadSheetCLA_SheetID;
                                     raidData.RPB_SheetID = generatedSheets.SpreadSheetRPB_SheetID;
+                                    raidData.CLA_SheetID = generatedSheets.SpreadSheetCLA_SheetID;
+                                    
                                 }
 
                                 ActivePost.EditLog(r, indexWanted, raidData);

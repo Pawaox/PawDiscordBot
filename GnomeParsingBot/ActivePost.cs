@@ -56,6 +56,9 @@ namespace GnomeParsingBot
 
             await channel.ModifyMessageAsync(PostID.Value, (prop) =>
             {
+                if (textMessage.Length >= 2000)
+                    textMessage = textMessage.Substring(0, 1999);
+
                 prop.Content = textMessage;
                 prop.Embed = embed;
             });
@@ -87,6 +90,7 @@ namespace GnomeParsingBot
                     string wcl = StaticData.URL_WARCRAFTLOGS_BROWSERREPORTS + data.LogID + "/";
                     string analytics = data.CLA_URL ?? "";
                     string performance = data.RPB_URL ?? "";
+                    string ironforgeProCooldownUses = $"https://ironforge.pro/analyzer/report/{data.LogID}/";
 
                     string finalText = "[Logs](" + wcl + ")";
 
@@ -95,6 +99,9 @@ namespace GnomeParsingBot
 
                     if (!string.IsNullOrEmpty(performance))
                         finalText += " - " + "[Performance](" + performance + ")";
+
+                    if (!string.IsNullOrEmpty(data.LogID) && (!string.IsNullOrEmpty(analytics) || !string.IsNullOrEmpty(performance)))
+                        finalText += " - " + "[CDs](" + ironforgeProCooldownUses + ")";
 
                     if (lRaid == LoggedRaid.SSC || lRaid == LoggedRaid.TK)
                         inline = true;
@@ -308,21 +315,30 @@ namespace GnomeParsingBot
                                                 index = l.IndexOf('(');
                                                 workVal = l.Substring(index + 1);
                                                 index = workVal.IndexOf(')');
-                                                workVal = workVal.Substring(0, index - 1);
+                                                workVal = workVal.Substring(0, index);
 
                                                 if (workHead.Contains("Logs")) //WarcraftLogs
                                                 {
+                                                    if (workVal.EndsWith('/'))
+                                                        workVal = workVal.Substring(0, workVal.Length - 1);
+
                                                     index = workVal.LastIndexOf('/');
                                                     lrd.LogID = workVal.Substring(index + 1);
                                                 }
                                                 else if (workHead.Contains("Analytics")) //cla
                                                 {
+                                                    if (workVal.EndsWith('/'))
+                                                        workVal = workVal.Substring(0, workVal.Length - 1);
+
                                                     lrd.CLA_URL = workVal;
                                                     index = lrd.CLA_URL.LastIndexOf('/');
                                                     lrd.CLA_SheetID = lrd.CLA_URL.Substring(index + 1);
                                                 }
                                                 else if (workHead.Contains("Performance")) //rpb
                                                 {
+                                                    if (workVal.EndsWith('/'))
+                                                        workVal = workVal.Substring(0, workVal.Length - 1);
+
                                                     lrd.RPB_URL = workVal;
                                                     index = lrd.RPB_URL.LastIndexOf('/');
                                                     lrd.RPB_SheetID = lrd.RPB_URL.Substring(index + 1);
@@ -343,6 +359,9 @@ namespace GnomeParsingBot
                 }
             }
 
+            if (done)
+            {
+            }
             return done;
         }
 
@@ -352,11 +371,15 @@ namespace GnomeParsingBot
 
             line = line?.ToUpper()?.Trim() ?? "";
 
-            if (line.StartsWith("GRU + MAG") || (line.Contains("GRU") && line.Contains("MAG")))
+            bool containsBlackTemple = line.Contains("BT") || line.Contains("TEMPLE") || line.Contains("BLACK");
+            bool containsHyjal = line.Contains("HYJ");
+
+
+            if (line.StartsWith("GRU + MAG") || ((line.Contains("GRU") && line.Contains("MAG"))))
                 r = LoggedRaid.GRUUL_MAG;
-            else if (line.StartsWith("SSC + TK") || (line.Contains("SSC") && line.Contains("TK")))
+            else if (line.StartsWith("SSC + TK") || ((line.Contains("SSC") && line.Contains("TK"))))
                 r = LoggedRaid.SSC_TK;
-            else if (line.StartsWith("HYJ + BT") || (line.Contains("HYJ") && line.Contains("BT")))
+            else if (containsHyjal && containsBlackTemple)
                 r = LoggedRaid.HYJAL_BT;
 
             else if (line.StartsWith("KARA"))
@@ -372,9 +395,9 @@ namespace GnomeParsingBot
             else if (line.StartsWith("TK") || line.StartsWith("TEMPEST"))
                 r = LoggedRaid.TK;
 
-            else if (line.StartsWith("HYJ"))
+            else if (containsHyjal)
                 r = LoggedRaid.HYJAL;
-            else if (line.StartsWith("BT") || line.StartsWith("BLACK"))
+            else if (containsBlackTemple)
                 r = LoggedRaid.BT;
 
             else if (line.StartsWith("ZA") || line.StartsWith("ZUL"))

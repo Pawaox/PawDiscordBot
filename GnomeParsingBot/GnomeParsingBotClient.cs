@@ -24,9 +24,14 @@ namespace GnomeParsingBot
             ReactOnlyIfMentionedFirst = false;
             CanReactToBotMessages = false;
 
-            AllowedServerChannelCombo = new Tuple<ulong, ulong>(701098779126005820, 816316160633995274);
+            //AllowedServerChannelCombo = new Tuple<ulong, ulong>(701098779126005820, 816316160633995274); //devspam
+            AllowedServerChannelCombo = new Tuple<ulong, ulong>(701098779126005820, 853690415580577852); //C-LOGS
+            //AllowedServerChannelCombo = new Tuple<ulong, ulong>(701098779126005820, 927306244010692629); //25m-pug-logs
+            //AllowedServerChannelCombo = new Tuple<ulong, ulong>(701098779126005820, 933109362677911573); //10m-pug-logs
+
+
             UserWhiteList.Add(136534046502158336); //Pawa
-            UserWhiteList.Add(329275162874740737); //Consita
+            //UserWhiteList.Add(329275162874740737); //Consita
 
             string prefix = "!_";
 

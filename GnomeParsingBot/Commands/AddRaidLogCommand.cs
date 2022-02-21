@@ -35,10 +35,13 @@ namespace GnomeParsingBot.Commands
                 if (ActivePost.PostID.HasValue)
                 {
                     LoggedRaid r = ActivePost.GetRaidFromLine(parameters[0]);
-                    string logID = parameters[1];
+                    if (r != LoggedRaid.NONE)
+                    {
+                        string logID = parameters[1];
 
-                    ActivePost.AddLog(r, new LoggedRaidData(r, logID));
-                    ActivePost.RewriteMessage("", client, msg.Channel);
+                        ActivePost.AddLog(r, new LoggedRaidData(r, logID));
+                        ActivePost.RewriteMessage("", client, msg.Channel);
+                    }
 
                     handled = true;
                 }

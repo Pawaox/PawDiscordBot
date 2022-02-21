@@ -2,10 +2,16 @@
 using GnomeParsingBot;
 using GnomeParsingBot.GoogleAPI;
 using GnomeParsingBot.WarcraftLogs;
+using static GnomeParsingBot.ActivePost;
 
 try
 {
-    StaticData.Initialize("Gnome Lovers", "Gehennas", WarcraftLogsClient.Region.EU);
+    StaticData.Initialize("Casual", "Gehennas", WarcraftLogsClient.Region.EU);
+    //StaticData.Initialize("Casual Pugs", "Gehennas", WarcraftLogsClient.Region.EU);
+
+    string[] googleScope = { "https://www.googleapis.com/auth/script.external_request", "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/drive.file" };
+    var googleCredentials = Google.Apis.Auth.OAuth2.GoogleWebAuthorizationBroker.AuthorizeAsync(Google.Apis.Auth.OAuth2.GoogleClientSecrets.FromFile(StaticData.PATH_GOOGLECRED_OAUTH).Secrets,
+        googleScope, "user", CancellationToken.None, new Google.Apis.Util.Store.FileDataStore(StaticData.PATH_FILEDATASTORE_CREDENTIALS)).Result;
 
     string botKeyPath = "C:/discordclient_gnomeParsing.txt";
     string botLogPath = "C:/Log_GnomeParsing.txt";
@@ -16,6 +22,29 @@ try
         botKey = File.ReadAllText(botKeyPath);
     else
         throw new Exception("Couldn't find client key at " + botKeyPath);
+
+    /*
+    string CLA = "", RPB = "";
+
+    string apiKey = System.IO.File.ReadAllText(StaticData.PATH_KEY_BASE);
+    using (WarcraftLogsClient wcl = new WarcraftLogsClient(null))
+    {
+        RolePerformanceBreakdown rpb = new RolePerformanceBreakdown(googleCredentials);
+        rpb.PrepareSheet(apiKey, "FjtDxTQ2YnM9vzWX");
+        rpb.GenerateSheetData();
+        rpb.FixRoles();
+        RPB = rpb.ExportSheetData();
+
+        CombatLogAnalytics cla = new CombatLogAnalytics(googleCredentials);
+        cla.PrepareSheet(apiKey, "FjtDxTQ2YnM9vzWX");
+        bool populate = cla.PopulateDataSheets();
+
+        if (populate)
+        {
+            CLA = cla.ExportSheetData();
+        }
+    }
+    */
 
     DiscordSocketConfig discSocketConfig = new DiscordSocketConfig();
     discSocketConfig.AlwaysDownloadUsers = true;

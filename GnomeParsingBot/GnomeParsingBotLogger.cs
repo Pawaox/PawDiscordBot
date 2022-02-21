@@ -38,13 +38,16 @@ namespace GnomeParsingBot
 
             if (!string.IsNullOrEmpty(LogFilePath))
             {
-                if (!File.Exists(LogFilePath))
+                lock (LogFilePath)
                 {
-                    File.Create(LogFilePath).Close();
-                    File.AppendAllText(LogFilePath, message);
+                    if (!File.Exists(LogFilePath))
+                    {
+                        File.Create(LogFilePath).Close();
+                        File.AppendAllText(LogFilePath, message);
+                    }
+                    else
+                        File.AppendAllText(LogFilePath, Environment.NewLine + message);
                 }
-                else
-                    File.AppendAllText(LogFilePath, Environment.NewLine + message);
 
                 Console.WriteLine(message);
             }

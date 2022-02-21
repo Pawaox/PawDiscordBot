@@ -300,8 +300,11 @@ namespace PawDiscordBot
             {
                 try
                 {
-                    if (Logger != null)
-                        Logger.Log(arg.Message);
+                    lock (Logger)
+                    {
+                        if (Logger != null)
+                            Logger.Log(arg.Message);
+                    }
                 }
                 catch (Exception exc) { if (Debugger.IsAttached) Debugger.Break(); }
             });
